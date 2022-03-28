@@ -1,0 +1,127 @@
+***********************************************************		GITHUB	PUSH && PULL		******************************************************************************
+//Push es poner nuestro repositorio en GITHUB y pull obtenerlos
+
+A la hora de crear el repositorio en github, nos otorgara los comandos para copiar y pegar en git en el repositorio que queramos subir y al logearnos lo creara.
+
+//Push de los tag de nuestro repositorio local: (en git)
+git push --tags			#Esto comprueba nuestros tags y los compara con el origen remoto y sube los cambios y para que se convierta en un release tag en github hay que editarlo en github, clic tag, create release from tag
+
+//Si en los tags los descargamos (en GitHub clic en tags y luego en zip), por ejemplo, en zip, descargamos el proyecto tal y como estaba en ese punto sin la carpeta .git
+
+
+//Para ver el repositorio desde git de GitHub al que esta enlazado:
+git remote -v
+
+//Hacer un pull	de los cambios en GitHub, esto hac eun merge automatico en nuestra rama actual, si no puede resolverlo mostrara el conflicto:
+git pull
+
+//Podemos configurarlo para que solo haga fast forward en vez de merge en los pull:
+git config --global pull.ff only #NO ES NECESARIO EN LA NUEVA VERSION
+
+//Mediante la opcion de clonar en github se puede recuperar el repositorio, el zip no tiene el .git, el repositorio con .git hay que obtenerlo de la siguiente manera:
+En el GitHub en el repositorio en code -> HTTPS o SSH copias la ruta y la ejecutas con git clone EN LA RUTA QUE QUIERES RESTAURARLO
+git clone https://github.com/vittypena/liga-justicia.git
+
+//Para subir los cambios de nuestro repositorio local y mover el puntero de origin, debemos de hacer un:
+git push
+
+-----------------
+//Cuando nuestro repositorio local esta por delante y GitHub esta por delante tb... en la nueva version hace el merge automaticamente y debemos resolver el conflicto en el archivo primero y:
+A continuacion despues de los cambios en el fichero, hacemos un git commit -am 'mensaje',
+Poidemos comprobar que con git lg siguen sin estar los punteros de git y github a la par y asi lo subimos a github, asi que hacemos un:
+git push
+-----------------
+
+*************************************************************************************************************************************************************************************************
+
+***********************************************************		GitHub Basico		******************************************************************************
+
+//Buscar archivos, en Go to file, nos saldra para escribir el archivo que queremos buscar, repositorio/buscamosloquesea
+//Go to line nos lleva a linea que pongamos
+
+//Podemos acceder a los commits dandole en el apartado de code al numero con el icono seguido de commits
+
+//Podemos añadir comentarios a los commits justo a la linea en concreta clicando en el commit y una vez en el fichero dandole al icono +
+
+//Se puede proponer pull request en vez de haciendo commit con la opcion de abajo de crear rama, para hacer cambios en los repositorios, podemos denegarlo o aceptarlo si lo aceptamos:
+Podemos crear un merge commit, que significa que es un commit adicional en el cual se hace esa accion,
+el squash and merge es una fusion con el ultimo commit revisado, sin crear el commit independiente de esta accion.
+Despues lo suyo es borrar la rama con delete branch (el icono)
+Se puede buscar el pull request con el #numero, en este caso #1 en el buscador de github
+
+git fetch			//Es parecido al pull request pero en vez de actualizar el contenido solo actualiza las referencias es decir los punteros que aparecen por ejemplo en git log, si hacemos esto eventualmente debemos hacer un git pull para dejar los punteros en el mismo punto, se suele hacer para ver que posibles conflictos podemos tener antes de un git pull
+
+*************************************************************************************************************************************************************************************************
+
+
+***********************************************************		GitHub Avanzado		******************************************************************************
+
+-------Cloning y Fork---------------
+En un repositorio publico podemos clonarlo para trabajar con su repo clonado y luego hacerle un pull request para proponerle los cambios.
+Arriba a la derecha en el boton de fork para crear nuestra propia copia del repo en nuestro github.
+Recordamos que si lo descargabamos en zip no teniamos los commit asi que para clonarlo hacemos clic en el icono de las paginas que sale en code al lado de la url y en git con esa url
+git clone https://github.com/vittypena/legion-del-mal.git
+------------------------------------
+
+-------Pull request-----------------
+En un fork con Fetch upstream traemos los cambios del repositorio original.
+Contribute podemos realizar el pull request a el fork original.
+Los cambios que hagamos en el pull request una vez hecho se modificaran en dicho pull request.
+
+Si queremos hacer el pull request en nuestro repositorio pulsamos create pull request
+------------------------------------
+
+
+//Para revertir solo un commit anterior en un archivo concreto**************************************************!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Pillamos el commit anterior a donde queremos ir y le hacemos un checkout especificando el archivo que queremos hacer que retroceda a ese commit:
+git checkout 6d595d0 miembros.md
+
+----------Flujos de trabajo-------------
+Trabajamos en ramas por usuarios y nunca directamente en el main.
+
+Si la rama - branch no esta subida en github debemos de subirla o no podremos hacer el git push, para ello:
+git push --set-upstream origin rama-vitty		//Sube la rama a github con sus cambios
+
+Podemos comparar la rama haciendo un compare & pull request y se quedara pendiente en pull request, cuando eso la aceptamos con merge pull request, nos dara la opcion en github de 
+borrarla si no queremos seguir trabajandola, si lo hacemos debemos borrarla del local tambien.
+----------------------------------------
+
+----------Revisar trabajo de otros compañeros Feature Branch----------------------------
+Podemos pillar las ramas de otros compañeros con:
+git pull --all
+Si no funciona con:
+git fetch --all
+git checkout la_rama		#Solo vemos las ramas en las que hemos trabajado en local con el comando git branch, para verla tenemos que cambiar a la rama para que se vea en el git branch, podemos comprobar si la tenemos con git lg
+//git branch -a		//Nos muestra las ramas con las que aun no hemos trabajado
+--------------------------------------------------------------------------------
+
+------------------------------        LIMPIAR RAMAS QUE YA ESTAN BORRADAS       --------------------------
+git branch -a		//Con este comando podemos ver las ramas que tenemos en local y aunque no salgan en branch siguen estando, para limpiarlas...:
+git remote prune origin			//Con este comando revisamos la basura que no existe en el remoto y la borra, borrando por ejemplo las ramas.
+----------------------------------------------------------------------------------------------------------
+
+------------------------------	      RAMA PRODUCCION		------------------------------------------
+Se aconseja trabajar en ramas y por cada una estable añadir un tag release por si borramos la rama, mediante ese tag poder recuperarla en caso de ser necesaria con:
+git checkout v1.0.0		//Nota v1.0.0 es el nombre del tag
+Luego aunque no la veaamos podemos cambiarnos a esa rama que si que estaba en el pasado:
+git checkout -b rama-kitkat
+
+A una mala podemos recuperar casi todo con git reflog  y el hash correspondiente;)
+----------------------------------------------------------------------------------------------------------
+
+//git push origin :rama-kitkat		//Borra la rama desde git
+
+
+-----------------------Issues----------------------------
+Un issue es como una pregunta o para comunicarse con miembros del trabajo, en el repositorio.
+Si borramos en el buscador, is:open, veremos tb los issues cerrados.
+
+A la derecha en assigned podemos asignar gente al issue una vez creado.
+Podemos hacerles referencia con # y el numero de issue.
+
+Podemos referenciar en un commit con un Fixes #Numero a un issue con:
+git commit -am 'Fixes #4: Hecho, borre a la capitana marven'
+
+Issues templates, para tener un template de issue al hacerlo:
+Settings -->  Create template --> Seleccionamos el tipo --> Editar y lo tocamos a placer --> Close Previuw --> Proponer Cambios
+---------------------------------------------------------

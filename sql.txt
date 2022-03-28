@@ -1,0 +1,643 @@
+Crear tablas lenguajesprogramacion y ocio
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	
+								TEMA 2
+select user from mysql.user;	//Ver todos los usuarios creados (desde root)
+
+show tables from examen;	//Ver todas las tablas de una BD.
+
+SHOW DATABASES();
+
+SHOW TABLES();
+
+DESC <NOMBRETABLA>
+
+SELECT NOW(); //Muestra la fecha actual
+
+SHOW CHARACTER SET; //Muestra los tipos de caracteres soportados
+
+varchar(20) character set utf8; //Se puede indicar el tipo de caracter en la columna tablao lo que sea poniendolo delante
+
+create table person
+   	(person_id smallint unsigned,
+	fname varchar(20),
+	lname varchar(20),
+	gender enum('M','F'),
+	birth_date DATE,
+	street varchar(30),
+	city varchar(20),
+	state varchar(20),
+	country varchar(20),
+	postal_code varchar(20),
+	constraint pk_person primary key (person_id)//Primary key
+); //Unsigned se usa para no pillar el rango negativo de los numeros y que sea más eficiente
+
+create table favorite_food
+	(person_id smallint unsigned,
+	foor varchar(20),
+	constraint pk_favorite_food primary key (person_id, food),
+	constraint fk_person_id foreign key (person_id) //Clave foranea
+		references person (person_id)
+);
+
+insert into person
+	(person_id, fname, lname, gender, birth_date)
+	values(null, 'William', 'Turner', 'M', '1972-05-27');
+
+update person
+	set street = '1225 Tremont St.',
+	    city = 'Boston',
+	    state = 'MA',
+	    country = 'USA',
+	    postal_code = '02138'
+	where person_id = 1;
+
+delete from person
+	where person_id = 2;
+
+drop table <nombreTABLA>;
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	
+								TEMA 3
+select user();
+
+select version();
+
+select emp_id, 'active' as status,
+       upper(lname) as last_name_upper
+       from employee;
+
+select distinct cust_id from account; //Elimina los duplicados
+
+create view employee_vw as
+       select emp_id, fname, lname,
+       year(start_date) start_year
+from employee; //Crea una vista de una tabla  
+
+select employee.emp_id, employee.fname,
+    -> employee.lname, department.name dept_name
+    -> from employee inner join department
+    -> on employee.dept_id = department.dept_id; //Union de tablas con el nombre completo
+
+select e.emp_id, e.fname, e.lname,
+    -> d.name dept_name
+    -> from employee e inner join department d
+    -> on e.dept_id = d.dept_id;		//Union de tablas mediante alias
+
+select emp_id, fname, lname, start_date, title
+    -> from employee
+    -> where title = 'Head Teller'
+    ->  and start_date > '2006-01-01'; 		//Where con un and
+
+Cuando utilizamos la clausula group by podemos filtrar con having (where).
+
+select d.name, count(e.emp_id) num_employees
+    -> from department d inner join employee e
+    ->  on d.dept_id = e.dept_id
+    -> group by d.name
+    -> having count(e.emp_id) > 2;		//Se usa agrupar cuando el servidor de base de datos tiene que realizar alguna operacion para mostrar los datos, en este caso el count()
+
+select open_emp_id, product_cd
+    -> from account
+    -> order by open_emp_id;
+
+select open_emp_id, product_cd
+    -> from account
+    -> order by open_emp_id, product_cd;	//En caso de empate ordena por la segunda condicion
+
+select account_id, product_cd, open_date, avail_balance
+    -> from account
+    -> order by avail_balance desc;		//Ordena en orden descendiente
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	
+								TEMA 4
+select cust_id, fed_id
+from customer
+where cust_type_cd = 'I'
+	and fed_id between '500-00-0000' and '999-99-9999';	//Where con y con between
+
+select account_id, product_cd, cust_id, avail_balance
+from account
+where product_cd in (select product_cd from product		//Where con subconsulta, in es equivalente a =
+	where product_type_cd = 'account');		
+
+select * from nothing
+where dinero like = '%Ho%';
+
+select cust_id, fed_id
+from customer
+where fed_id like '___-__-____';				//Las barrabajas en like se pueden usar para indicar el numero de caracteres
+
+select * from nada
+where libro is null;
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	
+								TEMA 5
+select e.fname, e.lname, d.name
+    -> from employee e join department d;			//Join basico sin el on une de todas formas posibles asi que multiplica los resultados. MAL
+
+select e.fname, e.lname, d.name					//Join basico con union de tabla
+    -> from employee e inner join department d
+    ->  on e.dept_id = d.dept_id;
+
+select a.account_id, c.fed_id, e.fname, e.lname			//Join de 3 tablas, se usa where
+    -> from account a inner join customer c
+    ->  on a.cust_id = c.cust_id
+    ->  inner join employee e
+    ->  on a.open_emp_id = e.emp_id
+    -> where c.cust_type_cd = 'B';
+
+select e.fname, e.lname,					//SELF JOIN
+    ->  e_mgr.fname mgr_fname, e_mgr.lname mgr_lname
+    -> from employee e inner join employee e_mgr
+    ->  on e.superior_emp_id = e_mgr.emp_id;
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	
+lenguajes programacion
+		cambiar el .ini de inicio para poder meter el cambio de password en ese fichero y entrar con root sin pass(paramos servicios, ponemos alter user root iden... en el .myini y ejecutamos el siguiente comando: mysqld --defaults-file"=C:\ProgramData\MySQL\MySQL Server 8.0\my.ini" --init-file=D:\\mysql-init.txt) luego entramos alteramos pass y despues borramos el ini que hayamos puesto en otra ruta.
+		show full tables *from base_de_datos*;
+		desc *tabla*;
+		show databases;
+		hacer un backup de una bd: .\mysqldump -u vittyroot -p bank > D:\Bases_de_datos\dumps\bankdb.sql
+		crear/borrar tablas/usuarios/basesDatos
+			-------------
+			 create table pole(
+    					   posicion mediumint not null,
+					   nombre varchar(30) not null,
+					   escuderia varchar(20) not null,
+    					   coche varchar(20) not null,
+					   carrera varchar(20) not null,
+					   anyo int not null,
+					   kilometros varchar(20) not null,
+					   constraint pk_posicion_id primary key(posicion)
+					   constraint fk_person_id foreign key(person_id) references person (person_id)
+					   );
+			-------------
+			drop view registros_sin;
+			drop table *tabla*;
+		crear usuario CREATE USER 'nuevo_usuario'@'localhost' IDENTIFIED BY 'contraseña';
+		dar privilegios GRANT ALL PRIVILEGES ON *.* TO 'nuevo_usuario'@'localhost';
+		para que los cambios tengan efecto inmediatamente flush privileges;
+		ver permisos show grants for vittywow;
+		logear con usuarios; .\mysql.exe -u root -p
+		cambiar de base de datos; use basedatos;
+		dar privilegios a usuarios a una tabla;
+		ver todos usuarios - select user, host from mysql.user;
+		ver usuario actual select current_user();
+		
+		cambiar contraseña usuario: ALTER USER 'root'@'localhost' IDENTIFIED BY 'NewPassword';
+		añadir columna alter table anime add autor varchar(20)not null after nombre;
+		añadir columna con constraint en una posicion alter table registros_personales add column manga_id mediumint unsigned after anime_id, add constraint fk_manga_id foreign key(manga_id) references manga(manga_id);
+		eliminar clave ajena alter table registros_personales drop foreign key fk_manga_id;
+		alterar columna alter table person modify person_id smallint unsigned auto_increment;
+		renombrar columna alter table person rename column birt_date to birth_date;
+		fecha actual sin hora -> curdate();
+--------------------------------------------------------------------
+		fecha datetime:
+		alter table cita modify fecha DateTime not null;
+		insert into cita (id_cita, nif_empresa, nombre, apellidos, correo, telefono, fecha)    values(null, 'B50510015', 'Turner', null, 'prueba@gmail.com', 636696969, '18-06-12 10:34:09');
+		select id_cita, year(fecha), hour(fecha), minute(year) from cita;
+--------------------------------------------------------------------
+
+
+		crear tabla:
+			create table videojuego(
+    -> videojuego_id mediumint unsigned auto_increment,
+    -> nombre varchar(30) not null,
+    -> autor varchar(30) not null,
+    -> plataforma varchar(20) not null,
+    -> tipo varchar(20) not null,
+    -> genero varchar(20) not null,
+    -> sinopsis varchar(1000)not null,
+    -> fecha date not null,
+    -> saga varchar(20) not null,
+    -> constraint pk_videojuego_id primary key(videojuego_id)
+    -> );
+
+		crear tabla con foreign key:
+    create table registros_personales(
+    -> registro_id mediumint unsigned auto_increment,
+    -> person_id mediumint unsigned not null,
+    -> anime_id mediumint unsigned,
+    -> estado varchar(20)not null,
+    -> fecha_visualizacion date,
+    -> nota smallint,
+    -> comentarios varchar(1000),
+    -> constraint pk_registro_id primary key(registro_id),
+    -> constraint fk_person_id foreign key(person_id) references person(person_id),
+    -> constraint fk_anime_id foreign key(anime_id) references anime(anime_id)
+    -> );
+
+	insertar fila:
+	insert into person
+    -> (person_id,fname,lname,gender,birth_date)
+    -> values (null,'William','Turner','M','1972-05-27');
+
+	seleccionar filtrando condicion
+     select *
+    -> from person
+    -> where person_id = 1;
+
+	ordenar datos:
+select food
+    -> from favorite_food
+    -> where person_id = 1
+    -> order by food;
+
+insertar en columnas
+	update person
+    set street = '1225 Tremont St.',
+    city = 'Boston',
+    state = 'MA',
+    country = 'USA',
+    postal_code = '02138'
+    where person_id = 1;
+
+borrar registro
+	delete from person
+    -> where person_id = 2;
+	
+sacar salida a formato xml facil:
+	logeamos con mysql -u user -p --xml basededatos
+
+ver datos completos de una tabla con restricciones incluidas show create table registros_personales;
+
+que contenga una cadena este escrita como este escrita select nombre
+    -> from videojuego
+    -> where upper(genero) LIKE upper('%RPG%');
+
+select version(),user(),database(); Para ver el usuario base y tal activos
+
+asignar alias--> select emp_id, empid * 3.14159 empid_x_pi from employee; O elect emp_id, empid * 3.14159 AS empid_x_pi from employee; para destacarlo mas
+eliminar duplicados(por ejemplo si varios clientes tienen varias cuentas y solo quieres ver los clientes que tienen cuentas y no el mismo id por cada cuenta)--> select distinct cust_id from account; Esto tiene mucha carga
+...................................................................
+Crear una vista para poder ver algo fijo:
+create view employee_vw as
+    -> select emp_id,fname,lname, year(start_date) start_year
+    -> from employee;
+.............................................................
+ORDER BY-->
+Ordernar por nombre:
+select e.fname, d.name
+    -> from employee e join department d on e.dept_id = d.dept_id
+    -> where d.name = any(
+    -> select d.name
+    -> from department d inner join employee e on d.dept_id = e.dept_id
+    -> group by d.name
+    -> having count(e.emp_id) > 2
+    -> )
+    -> order by d.name;
+--------------------------------------------------------------------------------------------
+Ordenar por dos condiciones NOTA: EL orden en el que aparecen las columnas en la clausula order by es determinante, en este caso primero por d.name y luego por e.fname:
+select e.fname, d.name
+    -> from employee e join department d on e.dept_id = d.dept_id
+    -> where d.name = any(
+    -> select d.name
+    -> from department d inner join employee e on d.dept_id = e.dept_id
+    -> group by d.name
+    -> having count(e.emp_id) > 2
+    -> )
+    -> order by d.name,e.fname;
+------------------------------------------------------------------------------------------------
+Ordenar Descendente (Por defecto es Ascendente):
+select account_id, product_cd, open_date, avail_balance
+    -> from account
+    -> order by avail_balance DESC;
+------------------------------------------------------------------------------------------------
+Ordernar por los ultimos tres digitos de la derecha:
+select cust_id, cust_type_cd, city,state,fed_id
+    -> from customer
+    -> order by right(fed_id,3);
+-------------------------------------------------------------------------------------------------
+Where->
+Concatenar y negar:
+	where end_date is null AND NOT (tittle = 'Teller' OR start_date < '2007-01-01'); se puede usar != tambien o <> para negar tb
+Where con between:
+	select emp_id, fname, lname, start_date
+    -> from employee
+    -> where start_date between '2001-01-01' and '2005-01-01';
+Where con un conjunto de cadenas:
+	select account_id, product_cd, cust_id, avail_balance
+    -> from account
+    -> where product_cd in('CHK','SAV','CD','MM');
+Where con subconsulta:
+	select account_id, product_cd, cust_id, avail_balance
+    -> from account
+    -> where product_cd in(
+    ->      select product_cd
+    ->      from product
+    ->      where product_type_cd = 'ACCOUNT'
+    -> );
+Where con coincidencia, por ejemplo de letra t en el primer char:
+ 	Select emp_id,fname,lname
+    -> from employee
+    -> where left(lname, 1) = 'T';
+where con t en tercera posicion y cuatro caracteres:
+	where lname LIKE '__t_';
+Where is null:
+	select emp_id, fname, superior_emp_id
+	from employee
+	where superior_emp_id is null;
+where por año:
+	select *
+    -> from account
+    -> where year(open_date) = '2002';
+*******************************************************************************************
+JOINS(si no marcamos el tipo de join se lia porque suele usar cross join,por lo que multiplica las filas
+Inner join:
+select e.fname, e.lname, d.name
+    -> from employee e inner join department d
+    -> on e.dept_id = d.dept_id;
+Si los id que los une son identicos se puede utilizar using para acortar
+select e.fname, e.lname, d.name
+    -> from employee e inner join department d
+    -> using (dept_id);
+----------------------------------------------------------
+Inner join 3 tablas:
+select a.account_id, c.fed_id, e.fname, e.lname
+    -> from account a inner join customer c
+    ->    on a.cust_id = c.cust_id
+    ->    inner join employee e
+    ->    on a.open_emp_id = e.emp_id
+    -> where c.cust_type_cd = 'B';
+----------------------------------------------------------
+Join subconsultas
+       select a.account_id, a.cust_id, a.open_date, a.product_cd
+    -> from account a inner join
+    ->    (SELECT emp_id, assigned_branch_id
+    ->      From employee
+    ->      Where start_date <= '2007-01-01' and (title = 'Teller' or title = 'Head Teller')) e
+    ->    on a.open_emp_id = e.emp_id
+    ->    inner join
+    ->         (SELECT branch_id
+    ->          from branch
+    ->          where name = 'Woburn Branch') b
+    ->    on e.assigned_branch_id = b.branch_id;
+----------------------------------------------------------
+Self-join auto union--> por ejemplo para sacar el nombre de un superior y del empleado inferior siendo que la columna superior referencia al empleado inferior:
+select e.fname, e.lname,
+    -> e_mgr.fname jefeName, e_mgr.lname jefeApellido
+    -> from employee e inner join employee e_mgr
+    ->   on e.superior_emp_id = e_mgr.emp_id; (superior_emp_id es la clave ajena que referencia a un emp_id, por lo tanto debemos unirla por separado)
+--------Otro Ejemplo--------
+select e.emp_id, e.fname, e.lname
+    -> from employee e inner join employee j
+    ->  on e.superior_emp_id = j.emp_id
+    -> where e.dept_id != j.dept_id;
+----------------------------------------------------------
+Select con negacion:
+select a.account_id,c.fed_id,p.product_cd
+     from account a inner join customer c
+      on a.cust_id = c.cust_id
+      inner join product p
+      on p.product_cd = a.product_cd
+     where c.cust_type_cd != 'I'; //!=-------------------------------
+***************************************************************
+
+UNION(une en la misma columna distintos datos sacados del select, deben de coincidir n columnas si puede ser y tipo de datos o convertibles)
+Select emp_id
+from employee
+where assigned_branch_id = 2
+	and (title = 'Teller' or title = 'Head Teller')
+union
+select distinct open_emp_id
+from account
+where open_branch_id = 2;
+****************************************
+Cadenas de caracteres
+Incluir apostrofe en un char: update string_tbl(con doble apostrofe o \)
+    -> set text_fld = 'This string didn''t work, but it does now';
+----------------------------
+Recuperar cadena con comillas y escapes incluidos(Util para exportar a otros formatos)
+Select quote(text_fld)
+->from string_tbl
+----------------------------
+Se puede hacer uso de char para caracteres distintos:
+Select 'abcdefg' char(97,98,99,100,101,102,103)
+---------------------------
+Mezclar caracteres char con cadena normal con CONCAT:
+Select concat('danke sch', char(148),'n'
+---------------------------
+LENGTH Longitud de cadena:
+	select length(char_fid)
+	from string_tbl;
+----------------------------
+POSITION para encontrar la posicion de una cadena:
+	select position ('characters' in vchar_fid)
+	from string_tbl;
+-------------------------------
+CONCAT para añadir cadenas a cadena ya existente:
+	update string_tbl
+	set text_fld = concat(text_fld, ', but now it is longer');
+------------------------------------
+CONCAT para formatear distintas columnas en una sola:
+	select concat(fname, ' ', lname, ' has been a ', title, ' since ',start_date) columnaConcatenada
+	from employee; 
+----------------------------
+SUBSTRING -> para extraer una cadena concreta:
+	select substring('goodbye cruel world', 9, 5); extrae cinco caracteres empezando por la posicion nueve.
+*******************************************
+DATOS NUMERICOS(Se pueden redondear si se almacenan en una columna tipo float)
+Calculo:
+	SELECT (37 * 59) / (78 - (8 * 6));
+------------
+MOD -> Calcula el resto:
+	SELECT MOD(10,4);
+--------------
+POW --> Calcula la potencia del primer numero elevado al segundo
+	select pow(2,8);
+---------------
+CEIL --> Redondear hacia arriba
+	Select ceil(74.6) = 75
+FLOOR --> Redondear hacia abajho
+	Select floor(74,6) = 74
+----------------------
+ROUND --> Redondear en condiciones:
+	select round (74.6);
+Con round se puede seleccionar cuantos decimales mostramos, por ejemplo 2:
+	select round(72.0909,2);
+------------------------------------
+SIGN devuelve -1 si el numero es negativo, 0 si es 0 y 1 si es postivo
+	select account_id, sign(avail_balance) from account;
+----------------
+ABS devuelve el valor absoluto:
+	select abs(avail_balance)
+	from account;
+**************************
+Sacar fecha completa:
+select utc_timestamp;  --> 2021-11-10 18:59:35
+----------
+Sacar año fecha mes en numeros:
+select current_date --> 2021-11-10
+--------------
+Cambiar zona horaria base de datos:
+set time_zone = 'Europe/Eurich';
+---------------
+columna datetime espera un valor tipo: '2008-09-17 15:30:00'
+columna date espera un valor tipo:'2008-09-17'
+-----------------
+str_to_date para dar formato a la fecha;
+--------------
+current_time() para sacar la hora
+--------------
+date_add() para sumar dias, meses, años a la fecha actual: (mirar los tipos de intervalos en el libro)
+select date_add(current_date(), interval 5 day), suma 5 dias a la fecha actual
+select tnx_date = date_add(tnx_date, interval '3:27:11' hour_second); suma la hora a la que este en el valor
+selec birth_date = date_add(birth_date, interval '9-11' year_month); suma 9 años y 11 meses
+otros tipos de dato son: second, minute, hour, day, month, year, minute_second, hour_second, year_month
+-----------------
+dayname() --> muestra el dia de una determinada fecha
+--------------
+extract() --> para sacar una parte de la fecha:
+select extract(year from '2008-09-18 22:19:05');
+---------------
+datediff() --> para mostrar el numero de dias entre una fecha y otra:
+select datediff('2009-09-03', '2009-06-24');
+*************************************************************************************************************
+Agrupar
+Con count podemos contar todo lo que hay en un grupo:
+	select open_emp_id, count(*) how_many
+    -> from account
+    -> group by open_emp_id;
+-------------------
+Count valores distintos:
+	select count(distinct open_emp_id)
+	from account;	
+----------------------------
+Having -> Para filtrar dentro de un grupo:
+	select open_emp_id, count(*) how_many
+    -> from account
+    -> group by open_emp_id
+    -> having count(*) > 4;
+---------------------------
+Funciones de agregacion:
+Max(),Min(), Avg(), Sum(), Count()
+----------------------
+Agrupar por expresiones:
+	select extract(year from start_date) year, count(*) how_many
+    -> from employee
+    -> group by extract(year from start_date);
+-------------------------
+with rollup: agregacion extendida para hacer una agregacion de una agregacion, en el ejemplo sumamos el total de producto por todas las sucursales tambien:
+	select product_cd, open_branch_id, sum(avail_balance) tot_balance
+    -> from account
+    -> group by product_cd, open_branch_id with rollup;
++------------+----------------+-------------+
+| product_cd | open_branch_id | tot_balance |
++------------+----------------+-------------+
+| BUS        |              2 |     9345.55 |
+| BUS        |              4 |        0.00 |
+| BUS        |           NULL |     9345.55 |
+| CD         |              1 |    11500.00 |
+| CD         |              2 |     8000.00 |
+| CD         |           NULL |    19500.00 |
+| CHK        |              1 |      782.16 |
+| CHK        |              2 |     3315.77 |
+| CHK        |              3 |     1057.75 |
+| CHK        |              4 |    67852.33 |
+| CHK        |           NULL |    73008.01 |
+| MM         |              1 |    14832.64 |
+| MM         |              3 |     2212.50 |
+| MM         |           NULL |    17045.14 |
+| SAV        |              1 |      767.77 |
+| SAV        |              2 |      700.00 |
+| SAV        |              4 |      387.99 |
+| SAV        |           NULL |     1855.76 |
+| SBL        |              3 |    50000.00 |
+| SBL        |           NULL |    50000.00 |
+| NULL       |           NULL |   170754.46 |
++------------+----------------+-------------+
+21 rows in set (0.00 sec)
+*******************************************************************************************
+Subconsultas con where devolviendo una sola fila:
+       select account_id, product_cd, cust_id, avail_balance
+    -> from account
+    -> where account_id = (select max(account_id) from account);
+------------------------------------------------------------------
+operador in en subconsultas -> que sea igual a las multiples subconsultas por sepadado, es el equivalente de x =y o x2=y2
+     select emp_id, fname, lname, title
+    -> from employee
+    -> where emp_id in (select superior_emp_id
+    ->   		from employee);
+o una negativa (nota en una consulta negativa hay que cersiorarse de que evitamos los null de ser necesario)
+	select emp_id, fname, lname, title
+    -> from employee
+    -> where emp_id not in (select superior_emp_id
+    -> 			    from employee
+    -> 			    where superior_emp_id is not null);
+-----------------------------------------------------
+operador all en subconsultas -> se tiene que comparar con todos
+       select emp_id, fname, lname,title
+    -> from employee
+    -> where emp_id != all(select superior_emp_id
+    ->                     from employee
+    ->                     where superior_emp_id is not null);
+-------------------------------------------------------
+operacion any en subconsultas ->se compara con todos pero con que uno sea es valido; = any es el equivalente a in;
+       select account_id, cust_id, product_cd, avail_balance
+    -> from account
+    -> where avail_balance > any (select a.avail_balance
+    ->                            from account a inner join individual i
+    ->                            on a.cust_id = i.cust_id
+    ->                            where i.fname = 'Frank' and i.lname = 'Tucker');
++------------+---------+------------+---------------+
+Subconsultas de multiples columnas:
+       select account_id, product_cd, cust_id
+    -> from account
+    -> where open_branch_id = (select branch_id
+    -> 				from branch
+    -> 				where name = 'Woburn Branch')
+    -> 				and open_emp_id in (select emp_id
+    -> 				from employee
+    -> 				where title = 'Teller' or title = 'Head Teller');
+o ponerlas juntas en el mismo orden que las devuelve la subconsulta
+     select account_id, product_cd, cust_id
+    -> from account
+    -> where (open_branch_id, open_emp_id) in
+    ->        (select b.branch_id, e.emp_id
+    ->         from branch b inner join employee e
+    ->           on b.branch_id = e.assigned_branch_id
+    ->         where b.name = 'Woburn Branch'
+    ->           and (e.title = 'Teller' or e.title = 'Head Teller'));
+--------------------------------------------------
+subconsultas correlacionadas, es decir que la subconsulta no sea independiente de la consulta
+	select c.cust_id, c.cust_type_cd, c.city
+    -> from customer c
+    -> where (select count(*)
+    ->       from account a
+    ->       where a.cust_id = c.cust_id) = 2;
+-------------------------------------------------
+operador exists, que no exista; se suele usar con select 1, pero realmente es valido cualquier cosa
+select a.account_id, a.product_cd, a.cust_id
+    -> from account a
+    -> where not exists (select 1
+    -> from business b
+    -> where b.cust_id = a.cust_id);
+----------------------------------
+consulta correlacionada creando una tabla con datos inventados:
+select e.emp_id, e.fname, e.lname
+    -> from employee e
+    -> inner join (select 'trainee' name, '2004-01-01' start_dt, '2005-12-31' end_dt
+    -> union all
+    -> select 'worker' name, '2002-01-01' start_dt, '2003-12-31' end_dt
+    -> union all
+    -> select 'mentor' name, '200-01-01' start_dt, '2001-12-31' end_dt
+    -> ) levels
+    -> on e.start_date between levels.start_dt and levels.end_dt;
+----------------------------------------------
+subconsulta en el select (util para no tener que unir tablas con inner join)
+select e.emp_id, e.fname, e.lname,
+    -> (select d.name
+    ->  from department d
+    ->  where d.dept_id = e.dept_id) dep_name,
+    -> (select b.name
+    ->  from branch b
+    ->  where b.branch_id = e.assigned_branch_id) suc_name
+    -> from employee e;

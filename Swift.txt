@@ -1,0 +1,2 @@
+
+Archivo tipo playground -> Es un archivo dnd escribir codigo y ver el resultado inmediatamente sin crear proyecto complejos.

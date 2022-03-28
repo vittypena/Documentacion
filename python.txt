@@ -1,0 +1,506 @@
+.3
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+														TEMA 1
+Para ejecutar el interpetre de python en cmd, usamos py.
+
+exit()	//Salir del snippet
+
+print("Hola mundo")	//Escribir por pantalla
+
+ctrol b en sublime o tools build para ejecutar el codigo, o en cmd py + ruta del fichero
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+														TEMA 2
+message = "Hello world!"					//Variable
+print(message)
+
+..............................
+message = "Hello world
+print(message.upper())						//muestra la cadena en mayusculas
+print(message.lower())						//muestra la cadena en minusculas
+print(message.title())						//.title en una cadena pone sus primeras letras en mayusculas
+
+..............................
+first_name = "Victor"
+last_name = "Pena"
+full_name = f"{first_name} {last_name}"
+full_nameV2 = first_name+" "+last_name
+print(full_name)
+print(full_nameV2)						//Varias formas de concatenar cadenas
+
+..............................
+first_name = "Victor"
+last_name = "Pena"
+full_name = f"{first_name} {last_name}"
+print(f"Hello!, {full_name.title()} Bienvenido")
+print("Hello!, " + full_name.title() + " Bienvenido")		//Varias formas de print con cadenas
+
+..............................
+\t y \n como en java (tabulacion y linea)
+
+..............................
+>>> favourite_lenguage = 'python '
+>>> favourite_lenguage
+'python '
+>>> favourite_lenguage.rstrip()
+'python'							//Quitar espacios en blanco a la derecha, lstrip a la izquierda y strip en ambos lados
+
+..............................
+3 ** 3 = 9							//2 * significa exponente, en python
+
+..............................
+numero = 14_000_000_000
+print(numero) 							//Mostraria el numero sin los guiones, se puede agrupar numeros con _ para legilibidad
+
+..............................
+x, y, z = 0, 0, 0						//Inicializar varios valores a la vez
+
+..............................
+#Hola gente, esto es un comentario				//Poner comentarios en python
+
+..............................
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+														TEMA 3		
+
+lista = ['hola', 'que', 'tal']
+print(lista[2])							//Acceder a una lista basica y inicializarla
+..............................
+
+
+lista = ['hola', 'que', 'tal']
+print(lista[-1])						//Acceder al ultimo elemento de la lista con -1 en python
+..............................
+
+lista[1] = 'hola'						//Cambiar ese elemento
+..............................
+
+lista.append('ducatti')						//Añadir elemento a la lista
+..............................
+
+listaBlanco = []
+listaBlanco.append('honda')					//Insertar al final
+listaBlanco.append('yamada')
+listaBlanco.append('suzuki')					//Lista en blanco dinamica
+..............................
+
+listaBlanco.insert(1,'insertado')				//Insertar en una posición
+..............................
+
+del listaBlanco[1]						//Eliminar en una posición
+..............................
+
+pop = lista.pop(1)	
+pop = lista.pop()						//Elimina el ultimo elemento de una lista, pero permite trabajar con el después de quitarlo si lo guardamos en una variable
+..............................
+
+lista.remove('ducati')						//Eliminar segun el valor, si desconocemos la posicion
+..............................
+
+lista.sort()							//Ordena alfabeticamente
+..............................
+
+lista.sort(reverse=True)					//Ordena alfabeticamente inverso
+..............................
+
+print(sorted(lista))						//Ordena temporalmente mediante sorted
+..............................
+
+lista.reverse()							//Invierte la lista
+..............................
+
+len(lista)							//Longitud de la lista
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+														TEMA 4
+magicians = ['alice', 'david', 'carolina']
+for magician in magicians:					//For each, detecta lo de dentro del for por la tabulacion
+	print(magiciann)	
+..............................
+
+for value in range(1, 5):					//For con rango numerico
+	print(value)
+
+..............................
+for value in range(6):						//For igual que el anterior pero de distinta forma, del 1 al 5
+	print(value)	
+
+..............................
+
+numbers = list(range(1, 5))					//For para crear una lista de numeros
+print(numbers)
+..............................
+
+numbers = list(range(2, 11, 2))					//For con tercer parametro para indicar la cantidad del salto
+print(numbers)
+
+..............................
+digits = list(range(1, 20, 2))					//Minimo, media y max de una lista de numeros
+print(min(digits))
+print(sum(digits))
+print(max(digits))
+
+..............................
+
+listaComprension = [value**2 for value in range(1, 10)]		//Lista comprimida, primero el valor con la operacion, despues el rango
+print(listaComprension)
+..............................
+
+listaPartida = ['alicia', 'victor', 'ollie', 'vitty', 'wow']	//Lista partida, es decir una parte especifica
+print(listaPartida[0:3])
+listaPartida = ['alicia', 'victor', 'ollie', 'vitty', 'wow']	
+print(listaPartida[0:])						//Lista partida, pero hasta el final
+..............................
+
+listaPartida = ['alicia', 'victor', 'ollie', 'vitty', 'wow']	//Bucle en lista partida
+for x in listaPartida[:2]:
+	print(x)	
+..............................
+
+listaPartida = ['alicia', 'victor', 'ollie', 'vitty', 'wow']	//Copiar lista, debe de ser con [:] o crearemos un enlace y no dos listas distintas
+copiaLista = listaPartida[:]
+print(copiaLista)
+..............................
+
+listaPartida = ('alicia', 'victor', 'ollie', 'vitty', 'wow')	//Crear tupla, similar a lista pero no se pueden redimensionar, en cambio si cambiar sus valores
+print(listaPartida[2])
+..............................
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+														TEMA 5
+if car == 'bmw':						//If con python
+		print(car.upper())
+else:
+		print(car.title())
+..............................				
+
+age = 23
+if age <= 24 and age == 23 or age == 27:			//If con and or
+	print("Hola")
+..............................	
+
+nombres = ['victor', 'pena']					//Comprobar valores en una lista, not in para no
+if 'victor' in nombres:						
+	print("Tonto")
+..............................	
+
+age = 7
+if age == 4:
+	print("holiwi")
+elif age == 7:							//Else if
+	print("pele")
+else:
+	print("Mierda")
+..............................	
+
+requested_toppings = []
+if requested_toppings:								//Comprobar listas null
+	print("La lista no esta vacia porque da true si tiene un elemento")
+else:
+	print("Lista con 0 elementos")
+..............................	
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+														TEMA 6
+alien_0 = { 'color':'green', 'points':5}				//Diccionaro sencillo clave-valor
+print(alien_0['color'])
+print(alien_0['points'])
+..............................	
+
+alien_0['añadir'] = 0							//Añadir valor al diccionario
+print(alien_0)
+..............................	
+
+alien_0 = {}								//Dicionario vacio
+..............................	
+
+alien_0['modificar'] = 0						//Modificamos el valor con la clave
+print(alien_0)	
+..............................	
+
+del alien_0['eliminar']							//Eliminamos con la clave
+print(alien_0)	
+..............................	
+
+point_value = alien_0.get{'points', 'Si la clave no existe, pilla este string'}	//GET para dar un valor por defecto si no existe esa clave
+..............................	
+
+user_0 = {
+	'username': 'efermi',
+	'first': 'emrico',
+	'last': 'fermi'
+}
+for key, value in user_0.items():					//Bucle for para leer el diccionario y como declararlo con multiples lineas
+	print(key)
+	print(value)
+..............................	
+
+for name in user_0.keys():						//Leer solo las keys del diccionario en un bucle
+	print(name)
+..............................	
+
+for name in sorted(user_0.keys()):					//Leer solo las keys del diccionario en un bucle, ordenadas
+	print(name)
+..............................
+
+for name in user_0.values():						//Leer solo las values del diccionario en un bucle
+	print(name)
+..............................	
+
+for name in set(user_0.values()):					//Leer solo las values del diccionario en un bucle, sin repeticiones
+	print(name)
+..............................	
+
+aliens = [alien_0, alien_1, alien_2]					//Crear diccionario de diccionarios
+..............................	
+
+alien_0 = {'username': 'efermi','last': ['hola','que','tal']}		//Guardar una lista dentro de un diccionario, se puede guardar cualquier tipo de dato dentro de un diccionario, incluso otros diccionarios
+..............................	
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+														TEMA 7
+message = input("Tell me something, and I will repeat it back to you: ")			//Input consola
+print(message)			
+..............................	
+
+numero = int(message)										//Pasar a int el input de cadena
+..............................	
+
+current_number = 1
+while current_number <= 5:									//Bucle While, se puede usar break y continue
+	print(current_number)
+	current_number += 1
+..............................	
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+														TEMA 8
+def greet():											//Declarar funcion e invocarla
+	"""Muestra un simple saludo"""								//Cadena de documentacion para generar documentacion de las funciones de un programa
+	print("Hello!")
+greet()
+..............................	
+
+def greet(username):										//Funcion con parametro y paso de argumento
+	"""Muestra un simple saludo"""
+	print(username.title())
+greet("Victor")
+..............................
+
+def describe_pet(pet_name, animal_type ='dog'):							//Funcion con valores por defecto en caso de omitirlos
+	print(f'My animal type is {animal_type} y su nombre es {pet_name}')
+describe_pet(pet_name="Pepito")
+..............................
+
+def describe_pet(pet_name, animal_type ='dog'):							//Funcion que retorna datos
+	full_name = pet_name+animal_type
+	return full_name
+print(describe_pet('pepito'))
+..............................
+
+nombre_funcion(nombre_lista[:])									//Para enviar una copia de una lista como argumento y no modificar la original
+..............................
+
+def describe_pet(*pet_name):									//Pasar ilimitados argumentos en forma de tupla
+	print(pet_name)	
+print(describe_pet('pepito','jua','viñi'))
+..............................
+
+def describe_pet(nombre,*pet_name):								//Mezclar argumentos con argumentos ilimitados, los ilimitados van despues
+	print(nombre+ " " + pet_name[1])	
+describe_pet('pepito','jua','viñi')
+..............................
+
+def describe_pet(**pet_name):									//** Para crear un diccionario de clave-valor
+	print(pet_name)	
+describe_pet(location = 'zgz', tiempo = 'viento')
+
+..............................
+import funciones										//Importar modulos(archivos.py) para usar sus funciones en otros archivos, podemos dar un aliasa funciones con: import funciones as f
+funciones.describe_pet('hola')
+..............................
+
+from nombre_modulo import nombre_funcion, nombre_funcion2					//Importar funciones especificas de modulos, en este caso no se llama la funcion con el nombre.funcion
+.nombre_funcion('hola')
+..............................
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+														TEMA 9
+
+class Dog:											//Crear una clase y sus metodos
+	"""Un simple intendo de modelar un perro."""
+
+	def __init__(self, name, age):								//Es el equivalente al constructor, es un metodo especial, los guiones indican que es un metodo predeterminado de python
+		"""Inicializa los atributos de nombre y edad."""
+		self.name = name								//self permite acceder a los atributos de la clase, similar a this, solo que aqui hay que incluirlo en el metodo
+		self.age = age
+
+	def sit(self):
+		"""Simula un perro sentandose"""
+		print(f"{self.name} is now sitting.")
+
+	def roll_ovewr(self):
+		"""Simula hacer la croqueta"""
+		print(f"{self.name} rolled over!")	
+
+my_dog = Dog('vitty', 14)									//Instanciar la clase Dog
+print(f"My dog name is {my_dog.name}")
+print(f"My dog age is {my_dog.age}")
+my_dog.sit()											//Llamar al metodo
+..............................
+
+class Car:
+
+	def __init__(self, make, model, year):
+		"""Iniciarlizar"""
+		self.make = make
+		self.model = model
+		self.year = year
+		self.odometer_reading = 0
+
+	def get_descriptive_name(self):								//Estilo toString
+		"""Devuelve un nombre descriaptivo con formato adecuado"""
+		long_name = f"{self.year} {self.make} {self.model}"
+		return long_name.title()
+
+	def read_odometer(self):	
+		print(f"El coche lleva {self.odometer_reading} computados")
+	
+	def describe_battery(self):
+		print(f"MEHHH")
+
+my_new_car = Car('audi', 'a4', 2019)
+print(my_new_car.get_descriptive_name())
+my_new_car.odometer_reading = 23								//Cambiar valor del atributo de una clase							
+my_new_car.read_odometer()		
+
+class ElectricCar(Car):										//Clase que HEREDA de car, la clase base debe de estar en el mismo fichero y aparecer antes
+	"""Herencia entre clases"""
+	def __init__(self, make, model, year):
+		"""Inicializa los atributos de la clase base"""
+		super().__init__(make, model, year)
+		self.battery_size = 75	#Su propio atributo
+
+	def describe_battery(self):								//Podemos sobreescribir metodos de la clase padre
+		print(f"El tamaño de la bateria es de {self.battery_size}")
+
+my_tesla = ElectricCar('tesla', 'model s', 2019)
+print(my_tesla.get_descriptive_name())
+my_tesla.describe_battery()
+..............................
+
+from car import Car 										//Importar en otra clase, la clase Car de car.py
+from car import Car, ElectricCar
+import car											//Importar modulo entero
+from car import Car as coche									//Importar con alias
+..............................
+from random import randint									//Python contiene su propia bibliteca de modulos para importar, como por ejemplo random
+print(randint(1, 6))										
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+														TEMA 10
+with open('numpi.txt') as file_object:	#abre el fichero					//Leer un fichero .txt, con el with open no hace falta el close, python elegira cuando cerrarlo
+	contents = file_object.read()	#lee el fichero y guarda su contenido en la variable
+print(contents)
+print(contents.rstrip())		#con r.strip eliminamos la ultima linea en blanco al leer
+
+for line in file_object:									//Leer linea a linea
+		print(line.rstrip())
+..............................
+
+with open('numpi.txt') as file_object:								//Guardar el fichero en una variable lista por lineas y leerla
+	lines = file_object.readlines()
+
+for line in lines:
+	print(line.rstrip())
+..............................
+
+with open('numpi.txt') as file_object:								//Trabajar con el contenido de un fichero
+	lines = file_object.readlines()
+
+pi_string = ''
+for line in lines:
+	pi_string += line.strip()
+
+print(pi_string)
+print(len(pi_string))
+..............................
+
+with open('write.txt', 'w') as file_object:							//Escribir en un fichero, con 'w'
+	file_object.write("I love programming.")
+
+..............................
+
+with open('write.txt', 'w') as file_object:							//Escribir en lineas distintas
+	file_object.write("I love programming.\n")
+	file_object.write("I love  create new games.\n")
+
+..............................
+
+with open('write.txt', 'a') as file_object:							//Añadir contenido sin sobreescribir el fichero
+	file_object.write("And add new line.\n")
+
+..............................
+
+try:												//Controlar excepciones
+	print(5/0)
+except ZeroDivisionError:
+	print("You cant divide by zero")
+
+try:												//Controlar las excepciones de manera silenciosa con pass
+	print(5/0)
+except ZeroDivisionError:
+	pass
+..............................
+
+#Almacenar datos en ficheros JSON para almacenar las preferencias de los usuarios y tenerlas disponibles:
+import json
+numbers = [2,3,5,7,11,13]
+filename = 'numbers.json'
+with open(filename, 'w') as f:
+	json.dump(numbers, f)									//Escribir en fichero json en el archivo f mediante json.dump(parametros a escribir, archivo)
+
+..............................
+import json
+filename = 'numbers.json'
+with open(filename) as f:
+	numbers = json.load(f)									//Leer un fichero json mediante json.load(fichero)
+print(numbers)
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+														TEMA 11
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

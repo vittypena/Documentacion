@@ -1,0 +1,237 @@
+************************************************************       FUNDAMENTOS GIT          ************************************************************************************************************
+Comandos----------------------------------------------
+/-- Es una palabra completa, - es abreviaturas
+git --version		//Ver la versión de git
+
+ctrl L 		//Para limpiar la consola
+
+git help		//Ayuda
+
+git help commit		//Ayuda del comando commit en el explorador
+
+git config --global user.name "Victor Pena"	//Establecer mi nombre de usuario en git
+
+git config --global user.email "victorpenawow@gmail.com"	//Establecer un correo en git
+//Estas dos cosas sirven para saber quien hizo el cambio en git, de manera opcional
+
+git config --global -e		//Muestra la configuracion de los usuarios locales
+//Una vez estas en el fichero, para escribir 'a', para salir esc -> :wq! (w para escribir)(q para salir) (! para que lo haga inmediatamente)
+
+cd /d/Curso-Git/01-bases 		//Para movernos al repositorio, si se deja caer la carpeta despues del cd autocompleta el path
+
+git init			//(En la ruta del proyecto)Inicializa el repositorio (los repositorios son todo el codigo de un proyecto, la carpeta vaya)
+//Al hacer esto en el propio proyecto como carpeta oculta se crea un repositorio .git, si se borra no se puede regresar a versiones anteriores
+
+git status			//Da informacion sobre los commits, la rama en la que nos encontramos, ficheros que no se da seguimiento...
+
+git add index.html		//Para decirle a git que hay que hacer seguimiento de esos archivos (index.html)
+
+git add .			//Para decirle que haga seguimiento de todos
+
+git reset .DS_Store		//Para dejar de hacer seguimiento a uno
+
+git commit -m "Primer commit"	//Para hacer commit, recordemos que -m con un - solo es para abreviaturas, si no seria --message, a partir de este momento cuando hagamos un status nos saldra que esta limpio
+//Eso significara que desde el commit no hemos realizado ningun cambio, los commit son como las capturas de las maquinas virtuales
+
+git log				//Con esto podemos ver quien ha hecho y que, por ejemplo commits
+
+//Para recuperar proyecto en un commit anterior, en el terminal (sea cual sea):
+ git checkout -- . 		//Le dice a git que reconstruya el proyecto de los archivos que se le estaba dando seguimiento a como estaba en el ultimo commit
+
+	//¿Que es una rama en git?
+//Es el lugar donde te encuentras trabajando en git
+git branch  //Te muestra las rama y con *rama en la que estas trabajando, da menos informacion que el git status, es mas concreta a las ramas
+//Master es ideal no trabajar en el, ya que debe de ser el desplegado, hay que trabajar en ramas
+
+git branch -m master main	//Cambias el nombre de la rama master por main
+
+git config --global init.defaultBranch main		//Para cambiarlo por defecto al iniciar por main, con global cambiamos todo lo del equipo y no el repo en concreto, esto se hace
+//porque con git trabajas en local y luego lo intercambias con GitHub y GitHub trabaja con main, si no lo cambias podria darte conflicto y no cumplir con las politicas de GitHub
+
+//Commits
+readme.md		//Es necesario para subir el repositorio y tener mas info
+
+git commit -am 'Readme actualizado'		//Añadir de una las actualizaciones con a y hacer commit con m, solo si ya estaban trackeados
+
+git add *.html					//Añade todos los html al stage
+		
+git add css/					//Añade todo lo que se encuentra en esa carpeta
+
+
+git status --short			//Git status resumido
+
+	
+git config --global alias.s "status --short --branch"		//Alias para nuestros comandos, el nombre del alias va despues del . y despues va el comando que queremos que sea entre comillas, de todas maneras con git config --global -e podemos editar todo en el fichero
+
+git log --oneline		//Log de forma corta
+
+git log --oneline --decorate --all --graph
+
+--------------
+alias para el log con lg:
+git config --global alias.lg "log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all" 
+
+
+---------Actualizar un alias------------
+lo editamos con git config--global -e en el fichero.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^RESUMEN^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1ºDe primeras ponemos la info de nuestro user y cambiamos el master por main para que sea compatible con GitHub:
+git config --global user.name "Victor Pena"
+git config --global user.email
+git config --global init.defaultBranch main
+
+2ºPodemos ver ayuda con git help comando y con git config --global -e vemos la configuracion del fichero y crear alias con git config --global alias.s "status --short"
+
+3º
+Para iniciar el repositorio en un proyecto : git init
+Añadimos lo que queremos monitorear con git add . y lo quitamos con git reset .DS_Store
+Hacemos el commit con lo que tenemos añadido con: git commit -m "Primer commit"
+Recuperamos lo del ultimo commit con: git checkout -- .
+
+4º
+Podemos ver el estado con git status y ver los log con git log
+*******************************************************************************************************************************************************************************************
+
+************************************************************     FUNDAMENTOS AVANZADOS GIT      ************************************************************************************************************
+//Cambios en los archivos
+------------------------------------------------------------------------------
+TEORIA
+Soft => "elimina" los commits posteriores al commit al que estas haciendo el reset
+	conserva los cambios en el stage area
+	conserva los cambios que tengas en tus archivos (working directory)
+Mixed => "elimina" los commits posteriores al commit al que estas haciendo el reset
+	Deshace los cambios en el stage area
+	conserva los cambios que tengas en tus archivos (working directory)
+Hard=> "elimina" los commits posteriores al commit al que estas haciendo el reset
+	Deshace los cambios en el stage area
+	Deshace los cambios que tengas en tus archivos (working directory)
+------------------------------------------------------------------------------
+git reset por defecto es mixed,
+
+git diff		//Se puede ver los cambios de los archivos con git diff archivo
+
+git diff --staged	//Si ese archivo tiene los cambios en el stage es decir has hecho un add ., tienes que verlo con --staged
+
+git commit --amend -m 'Notas añadidas a las instalaciones'		//Cambiar nombre del ultimo commit
+
+git reset --soft HEAD^		//El head apunta al ultimo commit y el ^ el de antes de ese head y si HEAD^2 es 2 antes el soft  eliminará la última confirmación de la rama actual, pero los cambios de archivo permanecerán en su árbol de trabajo
+//El soft es para que quite el commit pero los cambios esten todavia pendientes del commit es decir no destruya lo que se ve en el git status.
+git reset --soft 47be870	//Reset por hash
+
+advertencia lf will be replaced by CRL se puede paliar con: git config core.autocrlf true
+
+git reset --mixed 86011db	//Es un reset que tampoco es destructivo pero 
+
+
+//Recuperar contenido de commits
+
+git reflog		//Es un comando que nos indica todo lo que ha sucedido en orden cronologico, con este comando observamos el hash al que queremos volver y...
+git reset --hard d3c8731	//Hacemos un reset hard a ese hash, no se debe de hacer de manera normal, lo normal es trabajar mediante ramas, con esto volvemos atras en el tiempo.
+
+git mv destruir-mundo.md salvar-mundo.md	//Renombrar archivo moviendolo en el mismo directorio
+
+git rm salvar-mundo.md			//Destruir archivo mediante git
+
+//Si renombramos manualmente un archivo debemos de hacer un git add . para que git no pierda los cambios de ese archivo y lo enlace al nuevo nombre
+
+//Ignorar archivos en el seguimiento-----------------------------------------------------------------------------------------------------------------------------------
+1º para ello creamos el archivo .gitignore en la raiz del proyecto y dentro se especifican todos los archivos que quieres ignorar, ejemplo del interior:
+dist/
+node-moduloes/
+*.log
+2º Al .gitignore si hay que darle seguimiento!!!: git add . & git commit -m '.gitignore agregado'
+//Fin de ignorar archivos en el seguimiento----------------------------------------------------------------------------------------------------------------------------
+*******************************************************************************************************************************************************************************************
+
+************************************************************     Ramas, Uniones, Conflictos   ************************************************************************************************************
+//La rama es una copia acerca de como se encuentra en ese momento sin afectar a la raiz y facilmente cambiar entre ramas, unir ramas o crearlas.
+git branch rama-villanos	//Crea la rama villanos 
+
+git branch		//Indica las ramas que tienes creadas, la rama con el asterisco indica la rama en la que estas actualmente 
+
+git checkout rama-villanos	//Nos movemos de rama con ese comando, cuando cambiamos de rama, git nos elimina literalmente los archivos en fisico y los devuelve en la rama correspondiente que los tenga, igual para los cambios
+
+//Si quieres unir una rama con otra, debes estar en la rama que esta esperando los cambios
+git merge rama-villanos		//Estando en la rama main, unira la rama villanos con ella y aplicara los cambios, si da fast-forward todo ha salido sin conflitos, todo ok
+
+//Cuando ya no usamos esa rama, es conveniente borrar esa rama, -f para borrar de manera forzada sin aplicar cambios:
+git branch -d rama-villanos
+
+git checkout -b rama-villanos		//Crea la rama y se mueve a la vez
+
+//Cuando ambas ramas han avanzado en el tiempo es una union automatica, nos saldra el editor del texto y podremos hacer el commit a la vez que la union escribiendo un nombre
+
+//Uniones con conflictos, cuando las mismas lineas son distintas en ambas ramas, los tocamos en el propio fichero fisicamente en el editor de texto:
+git add .
+git commit -m 'union con rama conflicto'	//Despues de resolver el conflicto en el fichero añadimos al stage y hacemos un commit
+
+//Tags, son referencias a un commit especifico mediante un mensaje en un commit para saber de que va:--------------------------------------------------------------------
+git tag super-release		//Pone la etiqueta en el ultimo commit o donde te encuentres en ese momento
+
+git tag 	//Me muestra todos los tag
+
+git tag -d super-release	//Borra el tag
+
+git tag -a v1.0.0 -m 'Version 1.0.0 lista'		//Tag con formato con version, es como se suele hacer de normal, version + mensaje, el primer numero version distinta, el segundo funciones nuevas, y el tercer numero del tag errores
+
+git tag -a v0.1.0 f6e797d -m 'Version Alpha de nuestra app'		//Poner tag en un commit en concreto!!
+
+git show v0.1.0			//Muestra el mensaje '-m' de la version del tag que queramos y mucha mas informacion del commit en concreto
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*******************************************************************************************************************************************************************************************
+
+
+************************************************************               Git Stash y Git Rebase               ************************************************************************************************************
+//Stash es como una boveda para hacer pruebas con todos los cambios desde el ultimo commit y no afectar a despliegue y luego pillar los cambios del stash a la rama de nuevo, se usa como emergencia, lo ideal es crear ramas nuevas
+//Es decir como que mueves los cambios que estabas haciendo o parte de ellos a una caja para asi subir lo que puedas sin errores y luego cuando termines de editar el stash mueves las cosas a la rama de nuevo
+//Rebase es para unir commits, separarlos...
+
+**-----Stash------**
+Su objetivo es colocar los cambios que tenemos en un lugar especial, el stash para no perderlos. Lo recomendable en caso de urgencia es trabajar en un solo stash.
+
+git stash 		//Creamos el stash almacenando los cambios pendientes en ese stash.
+
+git stash list		//Ver las referencias del stash
+
+git stash list --stat	//Ver las referencias del stash con mas informacion
+
+git stash pop		//Recupera los cambios del stash y elimina el stash 0 que estuviese en esa posición, esto solo de no haber conflictos. Esto deja los cambios en el stage, por lo tanto hay que hacer el commit igualmente.
+
+//Conflictos stash, los resolvemos como con el merge.
+
+//Si queda basura en el git stash list al hacer el pop, lo borramos con:
+git stash clear			//Borra todos los stash, como siempre se puede recuperar con git reflog
+
+git stash apply stash@{2}		//Recupera ese stash en concreto de git stash list, pero no lo borra como el pop.
+
+git stash drop stash@{0}		//Borra un stash en la posicion concreta
+
+git stash show stash@{1}		//Muestra informacion concreta sobre el stash indicado
+
+git stash save 'Agregamos a loki en villanos'		//Crear stash con etiqueta de informacion para ver mas facil a que corresponde
+**----------------**
+
+**-----Rebase------**
+Sirve para ordenar commits, corregir mensajes de commits, unir commits y separar commits, esto es ideal hacerlo si las correcciones no han salido de nuestra computadora.
+
+git rebase master	//Une los commits de la rama en la que estes con la rama 'master', añadiendolos al principio del todo en la rama actual, de esta manera cuando vayamos a unir la rama con master hara un fast forward
+//Despues para unirlas haciendo ya fast forward:
+git checkout master 
+git merge rama-misiones-completadas		//Es prefrerible hacer el merge y resolver conflictos
+
+//Para unir commits con squash:
+git rebase -i HEAD~4			//~ Se escribe con alt + 126 y sirve para indicar que va a ser lo del head + 4 commits.
+//Una vez hecho ese comando saldra un editor de texto, para unir uno con el anterior debemos cambiar la palabra pick con la palabra squash en el que queremos unir y automaticamente lo unira al anterior aunque en el anterior ponga pick, para editar el texto es con la tecla a.
+
+//Reword, para cambiar nombre del commit, en caso de no ser un commit viejo y haberle hecho el push:
+git rebase -i HEAD~4  //Una vez en el editor ponemos r o reword en vez de pick en los que queramos cambiar y :wq! para ir al siguiente editor, en el siguiente editor:
+//Nos saldra un editor por cada reword y con cambiar la primera linea cambiaremos el mensaje, grabamos y salimos de ambos editores cuando la hayamos cambiado.
+
+//Para editar el commit:
+git rebase -i HEAD~4
+//Ponemos edit donde pick y wq!, a continuacion con git status podemos comprobar que se queda esperando a que editemos el rebase de forma interactiva:
+En este punto podemos hacer un git commit --amend, o git reset HEAD^ para volver al comit de antes de ese que queremos editar, crear los commits bien y de esta manera hacer dos nuevos commits en vez de uno por ejemplo y luego hacer el continue
+//Cuando acabemos de editar: git rebase --continue, GRACIAS A ESTO TENEMOS EL COMMIT QUE ESTABA MAL GUARDADO Y LOS DOS NUEVOS QUE QUEREMOS
+
+git checkout -- README.md	//Nos reconstruye / regresa / devuelve SOLO el archivo readme del ultimo commit.
