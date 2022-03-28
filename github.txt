@@ -125,3 +125,8 @@ git commit -am 'Fixes #4: Hecho, borre a la capitana marven'
 Issues templates, para tener un template de issue al hacerlo:
 Settings -->  Create template --> Seleccionamos el tipo --> Editar y lo tocamos a placer --> Close Previuw --> Proponer Cambios
 ---------------------------------------------------------
+
+---------------------- Problemas Login GitHub in MacOs --------------------------
+Consultar:
+https://flaviocopes.com/setup-github-credentials-macos/
+---------------------------------------------------------------------------------
