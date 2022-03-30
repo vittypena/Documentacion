@@ -45,6 +45,7 @@ let interpolarString = "Mi nombre es: \(nombrevariable) y vivo en \(ciudadvariab
 
 #Comparar String:
 name1 == name2
+name1 != name2
 
 #String que contiene...:
 variableString.contains(name1)
@@ -57,4 +58,323 @@ for valor in variable{
 
 ---------------Colecciones-----------------------
 Los tipos de colecciones son: Arreglos, Set(unicos y ordenados), diccionarios(clave-valor)
+
+Arreglos, mutable e inmutable(que no se pueda modificar):*******
+var arregloNumeros = [1,2,3]
+let arregloNumeroInmutable = [3,2,1]
+print(arregloNumeros[1])
+arregloNumeros.append(5)	#Agregar al final
+arregloNumeros.insert(4, at:3)	#Agrega el elemento 4 en la posicion 3
+//Eliminar valores
+arregloNumeros.removeLast()
+arregloNumeros.remove(at:3)	#Elimina el valor de la posicion 3
+//Eliminar todo el arreglo
+arregloNumeros.removeAll()
+//Inicializar arreglo de tipo Int por ejemplo:
+var arregloVacio:[Int] = []
+****************
+
+Diccionarios**************
+//Declararlos:
+let myClassicDictionary = Dictionary<Int, String>()
+var myModernDictionary = [Int:String]()			#Int->Clave, String->Valor, ambas formar son validas, la de abajo es más actual
+//Añadir datos al diccionario:
+myModernDictionary = [001:"Juan", 002:"Brais"]
+//Añadir un solo dato:
+myModernDictionary[003] = "Ana"
+//Acceso a un dato
+myModernDictionary[002]
+/Borrar un dato
+myModernDictionary[002] = nil
+****************
+
+Tuplas**********
+//Las tuplas pueden tener diferentes tipos de datos
+//Declarar tupla
+var persona = ("Juan", "Villalvazo", 30, 1.86)
+//Acceder a un dato
+persona.0
+//Declarar tupla con clave:
+var persona = (nombre:"Juan", apellido:"Villalvazo", edad:30, estatura:1.86)
+************************
 -------------------------------------------------
+
+----------------Enumeracion----------------------
+Agrupar diferentes valores por numero para evitar errores:
+//Sintaxis Enumeración
+enum PersonalData{
+    case name
+    case surname
+    case address
+    case phone
+}
+//Editar valores 
+var currentData: PersonalData = .name
+var input = "Brais"
+currentData = .phone
+input = "666666666"
+
+//o
+
+//Enumeraciones con valores asicioados
+enum ComplexPersonalData{
+    case name(String)
+    case surname(String, String)
+    case address(String, Int)
+    case phone(Int)
+}
+//Editar datos
+var complexCurrentData: ComplexPersonalData = .name("Brais")
+var complexCurrentData = .address("Calle Test", 5)
+
+//o
+
+//Enum con el mismo tipo de valor
+enum RawPersoonalData: String{
+    case name = "Nombre"
+    case surname = "Apellidos"
+    case address = "Direccion"
+    case phone = "Numero de telefono"
+}
+//Acceder al valor
+RawPersoonalData.phone.rawValue
+-------------------------------------------------
+
+-------------Range Operator---------------
+//Sirve para pillar un rango en un arreglo
+var arregloEjemplo = [0,1,2,3,4,5,6,7,8,9]
+var subsetArreglo = arregloEjemplo[1..3]	#Pilla del 1 al 3
+var subSetaArreglo2 = arregloEjemplo[...3]	#Pilla del 0 al 3
+var subSetaArreglo3 = arregloEjemplo[5...]	#Pilla del 5 al 0
+//Crear un array con un rango sin tener que poner muchos numeros, array rango:
+var rangoCerrado = [1...5]
+var subArray = Array(rangoCerrado[0])
+------------------------------------------
+
+-----------------Condicionales--------------------
+if***********
+//Se pueden poner parentesis
+var edad = 17
+var cantidadDinero = 1000
+var sexoFemenino = false
+if edad < 20  || cantidadDinero > 250{
+    print("Es verdadero")
+}else {
+    print("No lo tienes")
+}
+
+if !((edad < 20  || cantidadDinero > 250) && (sexoFemenino)){
+    print("Es verdadero")
+}else {
+    print("No lo tienes")
+}
+**********************
+
+switch*************
+let country = "ES"
+switch country {
+case "ES":
+    print("El idioma es Español")
+case "AR":
+    print("El idioma es Español")
+case "PE":
+    print("El idioma es Español")
+case "ME":
+    print("El idioma es Español")    
+case "FR"
+    print("El idioma es Frances")
+default:
+    print("El idioma es Ingles")
+}
+
+
+let age = 20
+switch country {
+case 0,1,2:
+    print("Eres un bebe")
+case 3...10:
+    print("Eres un niño")
+case 11..<16:
+    print("Eres un adolescente")
+default:
+    print("El idioma es Ingles")
+}
+
+//Switch con Enum
+enum PersonalData {
+    case name
+    case surname
+    case address
+    case phone
+}
+let userData: PersonalData = .name
+switch userData {
+  case .name:
+    print("Estamos editando el nombre")
+  case .surname:
+    print("Estamos editando el surname")
+  case .address:
+    print("Estamos editando el address")
+  case.phone:  
+    print("Estamos editando el phone")
+}
+**********************
+--------------------------------------------------
+
+-----------------------Bucles---------------------
+for in, while y repeat while
+//For each
+for in*************
+//For in con rango:
+var contadora = 0
+for numero in 1...4 {
+    contadora += 1
+    print(numero)
+}
+
+//For in con variable:
+var paises = ["MX", "EUA", "JP"]
+for pais in paises {
+    print(pais)
+}
+
+//For in con diccionario clave valor
+var paises = ["MX":"Mexico", "EUA":"Estados Unidos", "JP":"Japon"]
+for (pais, significado) in paises {
+    print(" \(pais) --- \(significado) ")			#Recordar que \(variable) es para escapar en un string
+}
+*******************
+
+while***********
+var age = 10
+while age < 18 {
+    print("Eres menor de edad. Te faltan \(18 - age) años")
+    age += 1
+}
+
+*********************
+//Do while
+repeat while************
+var numeros = [1,2,3,4,5,6,7,8,8,9,10]
+var i = numeros.count -1
+repeat {
+    numeros.remove(at:i)
+    i = numeros.count -1
+} while (numeros.count > 0)
+
+var numeroAleatorio:Int
+var n = 0
+repeat {
+    n += 1
+    numeroAleatorio = Int(arc4random_uniform(10) #Numero aleatorio numero aleatorio del 0 al 10)
+    print("El ciclo lleva \(n) cantidad de iteraciones")
+} while (numeroAleatorio != 8)
+************************
+--------------------------------------------------
+
+-------------------Funciones-----------------------
+//Declararla***********
+func holaMundo(){
+    print("Hola Mundo")
+}
+//Llamarla
+holaMundo()
+
+//Funcion con parametro***********
+func cuadradoDeNumero(numero:Int){
+    var numeroCuadrado = x * x
+    print(numeroCuadrado)
+}
+cuadradoDeNumero(numero:5)
+
+//Funcion con valor de retorno ***********
+func cuboDe(numero:Int) -> Int{
+    let numeroCubo = numero * numero * numero
+
+    return numeroCubo
+}
+print(cuboDe(numero:3))
+
+//Funcion con multiples parametros*************
+func saludarAlumno(nombre:String, mensaje:String){
+    print("Hola \(nombre) \(mensaje)")
+}
+saludarAlumno(nombre:"Maria", mensaje: "Hola que tal")
+
+//Funcion con valores por default**************
+func saludarDefecto(nombre:String, mensaje:String = "Que tal"){
+    print("Hola \(nombre) \(mensaje)")
+}
+saludarDefecto(nombre:"Pedro")
+
+//Funcion con multiple retorno**********
+func listaNombres() -> [String]{
+    let arregloNombres = ["Jose", "Maria", "Morelos"]
+    return arregloNombres
+}
+var nombres = listaNombres()
+print(nombres)
+
+//Funcion con parametros de Nombres Externos, sirve para poner un nombre al parametro y hacerlo más descriptivo (mehh)
+func calificacionPromedio(matematicas materiaUno:Double, fisica materiaDos:Double,quimica  materiaTres:Double) -> Double{
+    return (materiaUno+materiaDos+materiaTres)/3
+}
+let miCalificacion = calificacionPromedio(matematicas:81, fisica:45, quimica:60)
+print(miCalificacion)
+
+//Clousures********* Como las funciones pero es una variable que guarda un bloque de codigo
+/*
+{
+    (parametros) -> tipo-valor-retorno in
+    codigo
+}
+*/
+let miPrimerClousure = {
+(materiaUno:Double, materiaDos:Double, materiaTres:Double) -> Double in
+    return (materiaUno+materiaDos+materiaTres)/3
+}
+print(miPrimerClousure(100, 22, 88))
+---------------------------------------------------
+
+---------------- Programacion Orientada a Objetos-------------------------------
+//Estructuras**************
+//Declararla
+//Estructura
+struct cuadrados {
+    var ancho = 10
+    var alto = 10
+
+    func area() -> Int{
+        return ancho * alto
+    }
+}
+//Utilizarla
+var miCuadrado = cuadrados()
+var areaCuadrado = miCuadrado.area()
+***************************************
+
+//Clases**********
+class automovil{
+    var color = "neutro"
+    var numeroLlantas = 4
+    var precio = 0
+    func encender() -> Bool{
+        return true
+    }
+    func apagar() -> Bool{
+        return true
+    }
+    func acelerar() -> Bool{
+        return true
+    }
+}
+//Instanciarlo
+var miObjetoMazda = automovil()
+//Asignar valores
+miObjetoMazda.precio = 500
+print(miObjetoMazda.precio)
+*************************************
+//La clase al crear copias de la instancia, referencia a la otra, es decir los cambios se aplican a la copia de esa instancia y el otro(estructuras no referencia a esa copia, los cambios no afectan al original)
+**************************************************
+--------------------------------------------------------------------------------
+
