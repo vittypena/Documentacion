@@ -1,2 +1,60 @@
 
+--------------------Playground--------------------------
 Archivo tipo playground -> Es un archivo dnd escribir codigo y ver el resultado inmediatamente sin crear proyecto complejos.
+Para crearlo creamos un proyecto normal y como si fuese un .java le damos a la carpaeta del proyecto boton derecho crear new file y abajo del todo playgroundblanc.
+Para ejecutarlo clic en el play.
+--------------------------------------------------------
+
+-----------------Comentarios---------------------
+//Comentario en linea
+/*
+Comentario en varias
+lineas.
+*/
+-------------------------------------------------
+
+-----------------Variables-----------------------
+var nombre = "Hello, playground"
+
+#Variable constante:
+let sConstante = "variable final"
+
+#Declarar varias variables de golpe:
+let variable1 = "1", variable2 = 0, variable3 = "cinco"
+
+#Sumar double e int, (casteando):
+var suma = Double(xInt) + y
+
+#Declarar tipo de dato sin que lo haga automaticamente swift:
+var x:Int = 20
+
+#String en varias lineas:
+let myMultipleString = """
+Esto es un string
+en varias lineas
+"""
+
+#Caracteres unicode Unicode, por ejemplo el 59:
+let myCaracter = "\u{59}"
+
+#Emojis
+let myEmoji = "\u{1F496}"
+
+#Interpolar String:
+let interpolarString = "Mi nombre es: \(nombrevariable) y vivo en \(ciudadvariable)
+
+#Comparar String:
+name1 == name2
+
+#String que contiene...:
+variableString.contains(name1)
+
+#Recorrer String caracter a caracter:
+for valor in variable{
+	print(valor)
+}
+-------------------------------------------------
+
+---------------Colecciones-----------------------
+Los tipos de colecciones son: Arreglos, Set(unicos y ordenados), diccionarios(clave-valor)
+-------------------------------------------------
