@@ -378,3 +378,210 @@ print(miObjetoMazda.precio)
 **************************************************
 --------------------------------------------------------------------------------
 
+-----------Opcionales---------------------
+//Pasar a int desde string
+let myStringNumber = "100"
+let myIntNumber = Int(myStringNumber) 	//Transformar a int
+
+//Transformar a int de manera opcional, es decir si se puede mediante variable: Int?
+let mywrongStringNumber = "Brais"
+let myWrongIntNumber: Int? = Int(myWrongStringNumber)
+
+//Declarar variable como posible nulo
+var myOptionalString: String?
+print(myOptionalString)
+
+//Comprobar si es nulo
+if myOptionalString != nil{
+    print("No es nulo")
+}else {
+    print("Es nulo")
+}
+
+//Desempaquetado forzado, esto significa que con esto evitaremos el error de que es nulo, porque aunque en un principio sea nulo, le estamos diciendo que en este punto no va a ser nulo
+print(myOptionalString!)
+
+//Guard let************
+//Salida rapida guard let, sirve para desempaquetar valores no nulos pero lo que va  aproducir es salida rapida, es decir exigir que una condicion sea verdadera para que se ejecute el dcodigo siguiente y si no parar el programa
+//Debe estar dentro de una funcion, para en caso de no funcionar, escapar de la funcion con el return
+var myOptionalString: String?
+
+func myFunction(){
+    guard let myString = myOptionalString else{
+        return
+    }
+    print("El valor de myString es \(myString)")    
+}
+
+myFunction()
+myOptionalString = "Mehh"
+myFunction()
+***********************
+
+//Manejo de errores try catch************
+func sum(firstNumber: Int?, secondNumber: Int?) throws -> Int {
+    if firstNumber == nil{
+        throw SumError.firstNumberNil
+    }else if secondNumber == nil{
+        throw SumError.secondNumberNil
+    }else if firstNumber! < 0 || secondNumber! < 0{
+        throw SumError.numberNegative(firstNumber: firstNumber!, secondNumber: secondNumber!)
+    }
+    return firstNumber! + secondNumber!
+}
+
+//Definicion de tipos de errores, para capturarlos, los invocamos en la funcion de arriba
+enum SumError: Error{
+    case firstNumberNil
+    case secondNumberNil
+    case numberNegative(firstNumber: Int, secondNumber: Int)
+}
+//Propagacion de errores, lo intentamos mediante el uso de do try
+do{
+print(try sum(firstNumber: 4, secondNumber: -50))
+}catch SumError.firstNumberNil{
+    print("El primer numero es nulo")
+}catch SumError.secondNumberNil{
+    print("El segundo numero es nulo")
+}catch SumError.numberNegative(let firstNumber, let secondNumber){
+    print("Hay algun numero negativo \(firstNumber), \(secondNumber)")
+}
+*****************************************
+
+//Type casting*************
+//Type casting (validacion de tipos de dato)
+let myString = "Brais"
+let myInt = 32
+
+class Myclass{
+    var name: String!
+    var age: Int!
+}
+
+let myClass = Myclass()
+myClass.name = "Brais Moure"
+myClass.age = 32
+
+//Con un array de tipo de dato any podemos introducir cualquier dato dentro, array con todo
+let myArray: [Any] = [myString, myInt, myClass]
+
+//Comprobar que tipo de dato es
+for item in myArray{
+    //Type casting 
+    if item is String{
+        //Downcasting, que viene a ser transformar un tipo de dato a otro más restringido, hay que obligar con ! a que sea de tipo String para hacer el cast
+        let myItemString = item as! String
+        print("Item es de tipo String y tiene el valor \(myItemString)")
+    }else if item is Int{
+        let myItemInt = item as! Int
+        print("Item es de tipo Int y tiene el valor \(myItemInt)")
+    }else if item is Myclass{
+        let myItemMyclass = item as! Myclass
+        print("Item es de tipo Myclass y tiene el valor \(myItemMyclass.name!) y \(myItemMyclass.age!)")
+    }
+}
+//Lo mismo pero más corto
+for item in myArray{
+    if let myItemString = item as? String{
+        print("Item es de tipo String y tiene el valor \(myItemString)")
+    }else if let myItemInt = item as? Int{
+        print("Item es de tipo Int y tiene el valor \(myItemInt)")
+    }else if let myItemMyclass = item as? Myclass{
+        print("Item es de tipo Myclass y tiene el valor \(myItemMyclass.name!) y \(myItemMyclass.age!)")
+    }
+}
+*******************************
+-----------------------------------------------
+
+---------------Extensiones--------------------
+//Es una caracteristica de swift para agregar funcionalidades a una clase, estructura, tipo de dato o protocolo existente.
+let myMeters: Double = 5
+
+func metersToKm(meters: Double) -> Double{
+    return meters / 1000
+}
+
+print(metersToKm(meters: myMeters))
+
+//Como crear extensiones para añadir nueva funcionalidad a un tipo de dato,  en este caso serviria para cualquier tipo double del archivo
+extension Double{
+    var km: Double{
+        return self / 1000
+    }
+
+    var m:Double{
+        return self
+    }
+
+    var cm:Double{
+        return self * 100
+    }
+}
+
+print(myMeters.km)
+----------------------------------------------
+
+-------------Protocolos-----------------------
+//Un protocolo va a obligar a una estructura a que adopte una serie de propiedades o funciones, es como los metodos abstractos.
+//Protocolos, de esta manera estamos obligando a que si colocamos el protocolo en una estructura o clase se añada lo que hay en el protocolo
+protocol PersonProtocol {
+    //De esta forma vamos a poder obtener el valor de la propiedad y tambien leerlo
+    var name: String{ get set}
+    var age: Int{ get set}    
+    func fullName() -> String
+}
+
+//Añadir el protocolo a la estructura
+struct Programmer: PersonProtocol{
+    var language: String
+    var name: String
+    var age: Int
+    func fullName() -> String{
+        return "El nombre es \(name), edad : \(age), y escribe en\(language)"
+    }
+}
+
+struct Teacher: PersonProtocol{
+    var subject: String
+    var name: String
+    var age: Int
+    func fullName() -> String{
+        return "El nombre es \(name), edad : \(age), y da \(subject)"
+    }
+}
+
+let myProgrammer = Programmer(language: "Swift", name: "Brais", age: 32)
+let myTeacher = Teacher(subject: "Matematicas", name:"Juan", age: 50)
+print( myProgrammer.fullName() )
+print( myTeacher.fullName() )
+----------------------------------------------
+
+----------Genericos-----------------
+//Un codigo generico nos va a permitir escribir funciones reutilizables. Por ejemplo una funcion que recibe parametros genericos y trabaja sobre ellos.
+//Genericos
+
+//Funcion sin genericos
+//inout significa que son parametros que van a entrar y salir sin que nosotros los retornemos directamente
+func swapTwoInts(a: inout Int, b: inout Int){
+    let temporal = a 
+    a = b 
+    b = temporal 
+}
+var myFirstInt = 5
+var mySecondInt = 10
+print("El primer valor es \(myFirstInt) y el segundo \(mySecondInt)")
+swapTwoInts(a: &myFirstInt, b: &mySecondInt)
+print("El primer valor es \(myFirstInt) y el segundo \(mySecondInt)")
+
+//Con genericos, asi puede entrar cualquier valor generico sin especificar el tipo de dato que va a entrar
+func swapTwoGenerics<T>(a: inout T, b: inout T){
+    let temporal = a 
+    a = b 
+    b = temporal 
+}
+var myFirstGeneric = 5
+var mySecondGeneric = 10
+print("El primer valor es \(myFirstGeneric) y el segundo \(mySecondGeneric)")
+swapTwoGenerics(a: &myFirstGeneric, b: &mySecondGeneric)
+print("El primer valor es \(myFirstGeneric) y el segundo \(mySecondGeneric)")
+------------------------------------
