@@ -99,6 +99,118 @@ var persona = (nombre:"Juan", apellido:"Villalvazo", edad:30, estatura:1.86)
 ************************
 -------------------------------------------------
 
+---------------- Sets----------------------------
+//Coleccion, valores de un unico tipo, no ordenados pero si que no podran estar repetidos.
+// Similar a arrays. Conjuntos, colecciones, no estan ordenados y no pueden ser repetidos
+
+//Sin datos
+var mySet = Set<String>()
+
+//Con datos
+let mySet2 : Set<String> = ["Brais", "More", "Pena"]
+
+//Insercion de uno en uno
+mySet.insert("Vitty")
+mySet.insert("32")
+print(mySet)
+
+//Acceso
+if mySet.contains("Vitty"){
+    print("Existe")
+}else{
+    print("No existe")
+}
+
+//Remover
+mySet.remove("32")
+print(mySet)
+
+//Si el primer indice es...
+if let index = mySet.firstIndex(of: "Vitty"){
+    mySet.remove(at: index)
+}
+print(index)
+
+//Como iterar Sets
+mySet.insert("Vitty")
+mySet.insert("32")
+for myElement in mySet{
+    print(myElement)
+}
+
+//Operaciones de conjunto**************
+let myIntSet: Set = [1,2,3,4,5]
+let myIntSet2: Set = [1,2,3,4,5]
+//Interseccion crear un nuevo conjunto con los valores comunes entre ambos
+print(myIntSet.interseccion(myIntSet2))
+//Diferencia asimetrica, lo mismo pero con valores no comunes
+print(myIntSet.symmetricDifference(myIntSet2))
+//Union sin estar repetidos
+print(myIntSet.union(myIntSet2))
+//Sustraccion, los valores que tenga en comun con el primero los elimina
+print(myIntSet.subtracting(myIntSet2))
+
+//Ordenar Colecciones*******************************
+var myArray = [5, 8 ,1, 0, 3, 9, 7, 2, 4, 6]
+
+//myDictionary.sort() No soportado
+var myDictionary = [    
+    5:"Cinco",
+    8:"Ocho",
+    1:"Uno",
+    0:"Cero",
+    3:"Tres"
+]
+
+var mySet: Set = [5,8,1,0,3,9,7,2,4,6]  //mySet.sort() No soportado
+
+//Ordenarlos
+myArray.sort()
+print(myArray)
+//Ordenar bajo criterio, por ejemplo de mayor a menor
+myArray.sort{ (intA, intB) -> Bool in
+    return intA > intB
+}
+
+//Para ordenar en los 3 tipos de colecciones necesitamos sorted, nos devuelve una nueva ya ordenada
+var myArraySorted = myArray.sorted 
+print(myArraySorted)
+
+myArraySorted = myArray.sorted{ (intA, intB) -> Bool in
+    return intA > intB
+}
+
+let mySortedDictionary = myDictionary.sorted { (elementA, elementb) -> Bool in
+    return elementA.key < elementB.key
+}
+
+var mySortedSet = mySet.sorted { (intA, intB) -> Bool in
+    return intA > intB
+}
+
+//Hacer transformaciones a los arrays
+//Por ejemplo sumar 10 a todos los valores mediante mapeo (map)
+var myMapArray = myArray.map{(myInt) -> Int in
+    return myInt + 10
+}
+
+let myStringMapArray = myArray.map{(myString) -> String in
+    return "Este es el numero \(myInt)"
+}
+print(myMapArray)
+
+let myIntMapArray = myDictionary.map{ (myElement) -> Int in
+    return myElement.key
+}
+//**************************************************
+
+//For each para iterar******************
+    myArray.forEach{(myInt) in
+    print(myInt)
+    }
+//**************
+-------------------------------------------------
+
 ----------------Enumeracion----------------------
 Agrupar diferentes valores por numero para evitar errores:
 //Sintaxis Enumeración
