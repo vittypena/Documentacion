@@ -24,3 +24,174 @@ Es un superset de javascript extendiendo caracteristicas.
 Angular utiliza typescript porque es tipado evitando errores y nos permite la inyeccion de dependencias.
 Contiene la aplicacion en una sola pagina, pero si necesitas puedes poner más.
 ---------------------------------------
+
+-------------Angular Teoria-------------------
+//Podemos usar angular para app de moviles, de escritorio, webs...
+//Es un framework
+//Es modular, se crean modulos.
+//Google lo mantiene hoy dia.
+//Se compone de:
+	Componentes -> HTML, TypeScript
+	Rutas -> Diferentes componentes basados en el URL.
+	Directivas -> Directivas de componentes, estructurales y de atributos.
+	Servicios -> Se puede usar otros gestores, pero angular te permite trabajar de forma centralizada.
+	Modulos -> Modulo de productos por ejemplo donde esta todo lo de productos.
+---------------------------------------------
+
+*******************************Crear un proyecto Angular************************************************
+//En la carpeta donde queremos crearlo.. cd ruta
+ng new bases -> Le indicamos si queremos crear el archivo de rutas y si queremos css, scss...
+//Renombramos bases a el nombre del proyecto.
+
+//Para mostrarla en el navegardor web la aplicacion
+ng serve -o para compilar la app y mostrarla en el navegador web.
+--------------------------------------------------
+---------Cada archivo del proyecto Angular----------------
+e2e -> Parte de pruebas, aqui se hace la configuracion de las pruebas
+---------------------------------------------------------
+src -> 
+	app -> Contiene:
+		app.component.css -> Contiene el css de la app
+		app.component.html -> Contiene el html de la app
+		app.component.specs.ts -> Esta relacionado a pruebas
+		app.component.ts -> Es una clase de typeScript.
+		app.module.ts -> Es una clase qe hace como de 'agrupador'
+	assets -> Son recursos.
+	environments -> Es un lugar para las variables de entorno de desarrollo, environment.prod de prod y el environment.ts de produccion.
+	favicon -> Es el icono de la web
+	index.thml -> Pagina html 
+	main.ts	-> Ayuda a decirle a angular el ambiente en el que se corre, no se suele tocar	.
+	polyfills.ts -> Ayuda a tener mayor compatibilidad con otros navegadores web, no se suele tocar
+	styles.css -> Es css que se aplica a toda la aplicacion.
+	test.ts -> Es un ambiente de pruebas.
+---------------------------------------------------------
+	
+.json -> Son archivos de configuracion.
+tsconfig.json -> Archivo configuracion de typescript, como quiere que se traduzca a javascript.
+tsconfig.spec.json -> Relacionado a la parte de las pruebas, de integracion y tal.
+package.json -> No se suele tocar, contiene las dependencias de desarrollo y otras.
+package-lock.json -> No se toca, dice como se construyo cada modulo y demas
+karma.conf.js -> Archivo para las pruebas de integracion basadas en karma
+angular.json -> Archivo importante que contiene configuracines importantes de la aplicacion, como el favicont, cargar los assets, el styles.css...
+.gitignore -> Que no le de seguimiento git
+.editorconfig -> Son reglas para los archivos en general, no se suele tocar
+.browserlistrc -> No se suele tocar, por si acaso necesitamos incrementar compatibilidad a windows 11.
+*******************************************************************************************************************
+
+-------------------------App Component-------------------------
+app.component.ts ********
+	//Component requiere un objeto, minimo con selector el cual tendra el nombre del componente, donde se encuentra el html (template que queramos poner) y css
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent {
+  title = 'Contador App';
+}
+
+//En el .html podemos colocar el titulo con una variable que se encuentre en el .ts, por ejemplo:
+<!--Se puede colocar el titulo desde otro lado de esta manera-->
+<h1> {{ title }} </h1>
+
+<!--No se aconseja de que la logica la haga el template, debe de ser el componente de typeScript-->
+//Boton Con evento:
+<button (click)=" numero = numero +1;"> -1 </button>
+//O habiendo puesto la funcion en el componente.ts
+<button (click)="sumar()"> +1 </button>
+
+
+Metodos en el componente*************
+//En el componente.ts dentro del export class AppComponent:
+sumar(){
+    this.numero += 1
+  }
+*******************************
+---------------------------------------------------------------
+
+---------------------Crear componente manualmente------------------------
+//Lo primero para llamar el componente es con y lo llamaremos desde el index.html o donde sea:
+<body>
+  <app-root></app-root> <!--Este sera el nombre del componente incluido en @component selector -->
+</body>
+
+//Crearlo*****
+//Boton derecho en app y creamos un nuevo archivo -> nombre.component.ts
+import { Component } from '@angular/core';		//Importamos los componentes del core de angular, para posteriormente incluir el decorador en la clase que le convertira en componente.
+
+@Component({
+    selector:'app-contador',
+    template: `
+    <!--Se puede colocar el titulo desde otro lado de esta manera-->
+        <h1> {{ title }} </h1>
+        <h3>La base es: <strong> {{ base }} </strong></h3>
+
+
+        <!--No se aconseja de que la logica la haga el template, debe de ser el componente de typeScript-->
+        <button (click)="acumular(base)"> +{{base}} </button>
+
+        <span> {{ numero }} </span>
+
+        <button (click)="acumular(-1)"> -1 </button>
+
+    `,
+    styleUrls: ['./app.component.css']
+})
+//Export para utilizarlo fuera del archivo
+export class ContadorComponent{
+    title: string = 'Contador App';
+  numero: number = 10;
+
+  base: number = 5;
+
+  acumular(valor: number){
+    this.numero += valor;
+  }
+}
+
+---------------------
+//Despues de esto hay que añadirlo en app.module.ts en declarations e importarlo, la coma es importante.
+declarations: [
+    AppComponent,
+    ContadorComponent
+  ]
+---------------------
+//Ahora por ejemplo llamamos al componente desde app.component.html que a su vez esta llamado desde index.html, de esta manera:
+<app-contador></app-contador>
+**************
+----------------------------Fin crear componente---------------------------
+
+----------------------------Crear componente  de forma automatica------------------------------
+//En la terminal, en la ruta ->
+ng g c heroes/listado -> Es igual a ng generate component ruta
+
+//En el compontent.ts se crea automaticamente el OnInit que es el equivalente al Oncreate:
+export class ListadoComponent implements OnInit {
+
+  constructor() { 
+    console.log('constructor')
+  }
+
+  ngOnInit(): void {
+    console.log('onInit')
+  }
+
+}
+-----------------------------Fin Codigo Ejemplo
+-----------------------------------------------------------------------------------------------
+
+----------------------------- Directiva ngFor----------------------------------
+//Es un foreach en html para incluir el contenido de un array
+<ul>
+ <li *ngFor="let heroe of heroes">
+        {{heroe}}
+ </li>
+</ul>
+
+//Se puede poner el index:
+<li *ngFor="let heroe of heroes; let i = index">
+        {{heroe}} - {{i}} 
+</li>
+-------------------------------------------------------------------------------
+
+
