@@ -1,0 +1,78 @@
+//En el head colocas lo que el navegador entiende y en el body lo que el usuario entiende
+
+//Con ! tab en el principio del archivo te coloca toda la estructura basica.
+
+<!--Como poner un titulo-->>	//Comentario
+
+<h1>Hola Mundo</h1>	//Titulo
+
+<p>Guadalajara, Jalisco</p>		//Parrafo
+
+<a href="nosotros.html">Inicio</a>	//Enlace
+
+<img src="./img/banner.jpg">		//Poner imagen
+
+------------Webs para Iconos-----------------------------
+https://tablericons.com/
+---------------------------------------------------------
+
+------------Estructurar el contenido html----------------------------------
+*Header arriba
+*nav menu de navegacion
+main contenido principal
+	seccion dentro de main para secciones
+article para noticias o entrada de blog
+aside para poner en el lado derecho o izq
+div para otros
+*Footer abajo
+
+
+EJEMPLO:
+<!--Como poner un titulo, van del h1 al h6, diciendole al navegador lo que es mas importante, el h1 solo se debe poner una vez-->>
+    <header>
+        <h1>Juan De la Torre Freelancer</h1>
+    </header>
+    
+    <!--Si es un heading seria un section aunque vaya antes del main, porque significa que no es el contenido principal, sino que esta introduciendolo-->
+    <section>
+        <h2>Diseño y Desarrollo Web Freelancer</h2>
+        <!--Como poner un parrafo-->
+        <p>Guadalajara, Jalisco</p>
+    </section>
+    
+    <!--El contenido principal debe de estar en el main, por cada header debe de haber un section!!-->
+    <main>
+        <h2>Mis Servicios</h2>
+
+        <section>
+            <h3>Diseño Web</h3>    
+            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Eius ea voluptatem pariatur quasi quae animi maxime saepe natus,
+            quia reprehenderit ipsum.</p>
+        </section>
+        
+        <section>
+            <h3>Aplicaciones Web</h3>    
+            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Eius ea voluptatem pariatur quasi quae animi maxime saepe natus,
+            quia reprehenderit ipsum.</p>
+        </section>
+        
+        <section>
+            <h3>E-Commerce</h3>    
+            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Eius ea voluptatem pariatur quasi quae animi maxime saepe natus,
+                    quia reprehenderit ipsum.</p>            
+        </section>
+    </main>
+    
+    <!--Recordar la regla de que si tiene un header es un section-->
+    <section>
+        <h2>Contacto</h2>        
+    </section>
+    
+    <footer>
+        <p>Todos los derechos reservador. Victor Pena.</p>
+    </footer>
+---------------------------------------------------------------------------
+
+-----------------------Formularios-----------------------------------------
+
+---------------------------------------------------------------------------

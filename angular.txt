@@ -1,0 +1,26 @@
+------------------Instalacion Angular------------------------
+Visual Studio Code -> https://code.visualstudio.com/
+--Extensiones:
+	-Activitus Bar, Code Runner, Flatland Monokai Theme, Bracket Pair Colorizer, Bracket-pair-colorizer-2.colors, Material icon theme, Angular snippets, Angular language service, Angular inline, Auto close tag, Typescript importer
+
+Postman -> https://www.postman.com/downloads/
+--Sirve mucho para hacer pruebas con los endpoints, antes de hacer la integracion con angular se prueba con esto.
+--Login : victorpenawow@gmail.com, vittywow, pass without .
+
+MongoDB -> https://www.mongodb.com/try/download/compass
+--Gestor para ver nuestra bd para ver nuestra bd.
+
+Node -> https://nodejs.org/es/
+--Gestor de javascript asincrono
+--Para verificar que ha sido correctamente instalado -> Terminal -> node --version
+
+Angular -> https://angular.io/cli
+--En powershell -> npm install -g @angular/cli -> Si da error al comprobar con ng --version --> Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope CurrentUser --> Comprobamos con ng --version
+--Permite usar comandos angular, nos ayuda a generar la app, componentes, directivas, servicios..., pero antes lo voy a probar manualmente.
+-------------------------------------------------------------
+
+------------TypeScript-----------------
+Es un superset de javascript extendiendo caracteristicas. 
+Angular utiliza typescript porque es tipado evitando errores y nos permite la inyeccion de dependencias.
+Contiene la aplicacion en una sola pagina, pero si necesitas puedes poner más.
+---------------------------------------

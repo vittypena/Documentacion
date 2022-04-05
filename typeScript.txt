@@ -1,0 +1,345 @@
+//Nota: El ejemplo de ts-intro esta hecho con webpack para poder trabajar con typeScript
+//Docu oficial -> https://www.typescriptlang.org/docs/handbook/basic-types.html
+
+---------Pasos iniciales--------------------
+//Aqui vemos como instalar dependencias de un proyecto y como levantar un proyecto.
+//Dentro del proyecto de visual estudio hacemos *npm install* en la terminal de visual studio para que instale todas las dependencias (se encuentran en package.json) del proyecto para poder funcionar.
+//Al terminar genera el paquete node_modules el cual nunca se debe de tocar directamente.
+//En el explorador habilitar en los ... Scripts npm para poder ejecutarlos. y aqui con el boton de play en package.json se hace el *npm start*, el cual levanta el proyecto en modo desarrollo en el puerto especificado en scripts de package.json, de esta manera con el modo inspector en llas herramientas de desarrolladores veremos cambios en tiempo real, por ejemplo en la consola.
+//Desde consola con npm start en la ruta de proyecto tb podemos levantar el proyecto.
+--------------------------------------------
+
+---------Tipos Basicos----------------
+//Para declarar un String podemos hacer:
+let nombre = "Strider" y que lo infiera o let nombre: string = "Strider" e indicarselo		//String
+const nombre = "Strider" 	//Constante
+
+let hp: number | string = 95	//String o Int con la tuberia, en este caso la variable podra ser de ambos tipos.
+
+//Arreglo****************
+let habilidades: string[] = ['Bash', 'Counter', 'Healing']
+habilidades.push('Vitty')
+let habilidades: (boolean | string | number)[] = ['Bash', 'Counter', 100]
+habilidades.push(true)
+//***********************
+
+//Interfaz y Objeto**********************************
+//Para trabajar con objetos usamos interface para restringir los objetos y que sea como queramos en concreto, de esta manera se ceñira a eso, evitando errores.
+interface Personaje{
+    nombre: string;
+    hp: number;
+    habilidades: string[];
+    puebloNatal?: String;   //De esta manera pueblo natal es opcional
+}
+//Objeto añadiendole la interfaz Personaje
+const personaje:Personaje = {
+    nombre:'Strider',
+    hp:100,
+    habilidades: ['Bash', 'Counter', 'Healing']
+}
+//Añadimos el pueblo natal
+personaje.puebloNatal = 'Pueblo Paleta'
+
+//Console table imprime el objeto en console
+console.table(personaje)
+//*********************** */
+--------------------------------------
+
+----------------Funciones Basicas y Creacion de Objetos/Interfaces----------------------
+//Funciones******
+//Parametros con el tipo y luego: el dato que retorna
+function sumar(a: number, b: number): number{
+    //Se puede hacer un toString de esta manera.
+    //return (a + b).toString;
+    return a + b
+}
+
+//Otra manera de poner una funcion
+const sumarFlecha = (a: number, b: number):number => {
+    return a + b
+}
+
+//Funcion con argumento opcional y por defecto, el argumento opcional va despues de los obligatorios y los argumentos por defecto van despues.
+function multiplicar(numero: number, otroNumero?: number, base: number = 2): number{
+    return numero * base;
+}
+
+interface PersonajeLOR{
+    nombre: string;
+    pv: number;
+    mostrarHp: () => void;      //Podemos ponerle una funcion obligatoria a la interfaz del objeto
+}
+//Funcion vacia
+function curar( personaje: PersonajeLOR, curarX: number): void{
+    //Da por supuesto que personaje.hp va a existir.
+    personaje.pv += curarX;
+    console.log(personaje);
+}
+
+//Creamos un objeto PersonajeLOR
+const nuevoPersonaje: PersonajeLOR = { 
+    nombre: 'Strider', 
+    pv:50,
+    mostrarHp(){
+        console.log('Puntos de vida:', this.pv)
+    }
+}
+//Utilizamos la constante
+curar(nuevoPersonaje, 20)
+
+const resultado = sumar(1, 5);
+const resultado2 = multiplicar(1, 5);
+console.log(resultado)
+-------------------------------------------------------
+
+--------------Interface con anidados-------------------
+//Poner un objeto anidado en una interface, para ello se recomienta hacer otra interface de tipo del objeto anidado
+interface InterfaceSuperHeroe{
+    nombre: string;
+    edad: number;
+    direccion: InterfaceDireccion;
+    mostrarDireccion: () => string;
+}
+
+interface InterfaceDireccion{
+    calle: string;
+    pais: string;
+    ciudad: string;
+}
+
+//Creamos el objeto superHeroe
+const superHeroe: InterfaceSuperHeroe = {
+    nombre: 'Spiderman',
+    edad: 30,
+    direccion:{     //Objeto anidado dentro de superherooe
+            calle: 'Main St',
+            pais: 'USA',
+            ciudad: 'NY'
+    },
+    mostrarDireccion(){
+        return this.nombre + ', ' + this.direccion.ciudad + ', ' + this.direccion.pais;
+    }
+}
+
+const direccion = superHeroe.mostrarDireccion();
+console.log( direccion );
+-----------------------------------------------------------
+
+
+----------------Desestructuracion de Objetos-----------------------
+//La desestructuracion es extraer ciertas propiedades de un objeto y crear variables de ellas, para usarlo más facil.
+/La desestructuracion es extraer ciertas propiedades de un objeto y crear variables de ellas.
+interface InterfaceReproductor{
+    volumen: number; 
+    segundo: number;
+    cancion: string;
+    detalles: InterfaceDetalles;
+}
+
+interface InterfaceDetalles{
+    autor: string;
+    anio: number;
+}
+
+const reproductor: InterfaceReproductor ={
+    volumen: 90,
+    segundo: 36,
+    cancion: 'Mess',
+    detalles: {
+        autor: 'Vitty',
+        anio: 1995        
+    }
+}
+//Desestructuracion objeto
+const{ volumen, segundo, detalles} = reproductor;
+//Para extraer un objeto anidado hacemos lo siguiente, habiendolo desestructurado arriba:
+const{ autor } = detalles;
+//Tambien se puede hacer en una sola linea de la siguiente manera:
+//const{ vdetalles:{autor} } = reproductor;
+//Podemos ponerle nombre y asi utilizar mas variables desestructuradas de la siguiente manera con dos puntos, asi no da error de repetido:
+const{ autor : autorDetalle } = detalles;
+console.log(' El volumen actual es de: ', reproductor.volumen)
+console.log(' El volumen actual es de: ', volumen)
+console.log(' El segundo actual es de: ', reproductor.segundo)
+console.log(' El segundo actual es de: ', segundo)
+console.log(' La cancion actual es de: ', reproductor.cancion)
+console.log(' El autor es: ', reproductor.detalles.autor)
+-------------------------------------------------------------------
+
+--------------------------Desestructuracion de arreglos-------------------------------
+//Consiste en extraer de un arreglo variables y crear constantes de ellas.
+//Desestructuracion de arreglos, lo pilla por posicion, a no ser que lo hagamos de la segunda manera
+//Array para el ejercicio
+const dbz: string[] = ['Goku', 'Vegeta', 'Trunks'];
+const[p1,p2,p3] = dbz;
+//Si dejamos las , solo añadiremos solo esa posicion
+const[ , , p6] = dbz;
+console.log('Personaje 1:', dbz[0]);
+console.log('Personaje 2:', dbz[1]);
+console.log('Personaje 3:', dbz[2]);
+console.log('Personaje 3:', p6);
+--------------------------------------------------------------------------------------
+
+--------------------desestructuracion de argumentos en una funcion----------------------
+//Desestructuracion de argumentos, incluye for each
+interface Producto{
+    desc: string;
+    precio: number;
+}
+
+const telefono: Producto = {
+    desc: 'Nokia Al',
+    precio: 15
+}
+
+
+const tableta: Producto = {
+    desc: 'Ipad',
+    precio: 359
+}
+
+function calculaISV(productos: Producto[]){
+    let total = 0;
+    productos.forEach( (producto) => {
+        total += producto.precio;
+    })
+    /*Podemos evitar el producto.precio de la siguiente manera, desestructurandolo para ir directamente al precio:
+    productos.forEach( ( {precio} ) => {
+        total += precio;
+    })
+    */
+    return total * 0.15;
+}
+
+//Creamos un array de productos para poder invocar la funcion
+const articulos = [ telefono, tableta];
+const isv = calculaISV(articulos)
+
+console.log('ISV', isv)
+----------------------------------------------------------------------------------------
+
+---------------------Importaciones y exportaciones--------------------------------------
+import { Producto } from "./ejercicios/06-desestructuracion-funcion";
+
+//Como importarla estando en otro archivo, para ello en la interface a importar ponemos export delante (mirar 06-desestructuracion-funcion.ts en la interface Producto)
+//A continuacion la importamos, con ctrl . en la variable que pide la importacion
+
+//Variable array tipo producto
+const carritoCompras: Producto[] = [];
+
+//En el otro archivo:
+export interface Producto{
+    desc: string;
+    precio: number;
+}
+----------------------------------------------------------------------------------------
+
+----------------------Clases en TypeScript----------------------------------------------
+//Las clases sirven para crear instancias
+//Crear clase
+class Heroe{
+    private alterEgo: string;
+    public edad: number;
+    static nombreReal: number;
+
+    constructor(alterEgo: string){
+        console.log("Hey!!")
+        this.alterEgo = alterEgo;
+    }
+    //Tb hay una forma corta a poner los parametros y el constructor
+    /*
+        constructor( public alterEgo: string) {}
+    */
+   
+}
+
+//Extender clase
+class PersonNormal{
+    nombre:string;
+    direccion:string;
+    constructor(nombre:string, direccion: string){
+        this.nombre = nombre;
+        this.direccion = direccion;
+    }
+}
+class HeroeExtendido extends PersonNormal{
+    public nombre: string;
+    public direccion: string;
+    static nombreReal: number;
+
+    constructor(nombre: string, direccion: string, nombreReal: number){
+        super(nombre, direccion);
+    }
+    //Tb hay una forma corta a poner los parametros y el constructor
+    /*
+        constructor( public alterEgo: string) {}
+    */
+   
+}
+
+//Crear objeto de la clase
+const ironman = new Heroe('Ironman');
+console.log(ironman);
+----------------------------------------------------------------------------------------
+
+------------------Genericos-------------------------
+//Con los genericos podemos no especificar el parametro que vamos a recibir
+function queTipoSoy<T>(argumento: T){
+    return argumento;
+}
+let soyString = queTipoSoy("Hola Mundo");
+let soyNumero = queTipoSoy( 100 )
+----------------------------------------------------
+
+------------------Decoradores Clases--------------------
+//Caracteristica propia de typescript, docu oficial -> https://www.typescriptlang.org/docs/handbook/decorators.html#class-decorators
+//Sirven para cambiar las clases en el mmomento que son compiladas, de tal manera que extendera internamente esas funcionalidades que queremos implementar. 
+//Para trabajar con decoradores en el tsconfig.json debemos:descomentar esta linea -> "experimentalDecorators": true,        /* Enables experimental support for ES7 decorators. */ y poner una coma antes.
+//Crearlos es jodido, pero usarlos no tanto.
+
+//Ejemplo:
+//Declarar un decorador que añade nuevas propiedades a la clase
+function classDecorator<T extends { new (...args: any[]): {} }>(
+    constructor: T
+    ) {
+        return class extends constructor{
+            newProperty = "new property";
+            hello = "override";
+        };
+}
+
+//En tsconfig.json debemos descomentar la linea de experimental decorators para que funcione
+@classDecorator
+class MiSuperClase{
+    public miPropiedad: string = 'ABC123';
+    imprimir(){
+        console.log('Hola Mundo');
+    }
+}
+const miClase = new MiSuperClase();
+console.log(miClase.miPropiedad)
+--------------------------------------------------------
+
+----------------Encadenamiento Opcional----------------------
+//Es con el uso de ?
+interface Pasajero{
+    nombre:string;
+    hijos?:string[];
+}
+
+const pasajero1: Pasajero ={
+    nombre: 'Fernando'
+}
+
+const pasajero2: Pasajero ={
+    nombre: 'Natalia',
+    hijos: ['Natalia', 'Gabriel']
+}
+
+function imprimeHijos(pasajero: Pasajero): void{
+    const cuantosHijos = pasajero.hijos?.length || 0; //Similar a if y se pone ? porque arriba esta marcado como opcional y si no el valor es 0
+    console.log(cuantosHijos);
+}
+
+imprimeHijos(pasajero2);
+-------------------------------------------------------------

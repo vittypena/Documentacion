@@ -1,0 +1,22 @@
+----------------- Front End Developer--------------------------------
+HTML CSS JavaScript API's, es la persona encargada de lo que se puede ver en un sitio web.
+
+Botones, enlaces. información, formularios, imágenes....
+Codigo adaptable a pantallas.
+Trabaja con React.
+Javascript con angular...
+--------------------------------------------------------------------
+
+----------------- Back End Developer--------------------------------
+Programacion en la parte del servidor, como python. BD.
+Trabaja con PHP...
+Se encarga de los pagos de forma segura por ejemplo.
+Se encarga de modelar una bd para evitar redundancia y aplicar sus relaciones...
+Mejorar el performance del codigo actual, revisar seguridad, evitar ataques e inyeccion SQL.
+
+Crea API que el fronted va a consumir y mostrar.
+--------------------------------------------------------------------
+
+------------------Full Stack Developer------------------------------
+Es backend y frontend en uno solo.
+--------------------------------------------------------------------
