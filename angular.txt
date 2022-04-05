@@ -190,8 +190,100 @@ export class ListadoComponent implements OnInit {
 
 //Se puede poner el index:
 <li *ngFor="let heroe of heroes; let i = index">
-        {{heroe}} - {{i}} 
-</li>
+        {{i}} - {{heroe}}
+    </li>
 -------------------------------------------------------------------------------
 
+-------------------------------Directiva nglf----------------------------------
 
+//Ocultar una etiqueta hasta que se cumpla una condicion, por ejemplo si es false no aparece, si es true aparece:
+<div *ngIf="false">
+    <h3>Heroe Borrado</h3>
+    <span>{{heroeBorrado}}</span>
+    <button (click)="borrarHeroe()">Borrar</button>
+</div>
+
+//Mismo ejercicio que se aplique cuando el heroe este borrado, similar al if:
+<div *ngIf= " heroeBorrado != ''">
+    <h3>Heroe Borrado</h3>
+    <span>{{heroeBorrado}}</span>
+    <button (click)="borrarHeroe()">Borrar</button>
+</div>
+-------------------------------------------------------------------------------
+
+---------------------------------Directiva Ng-Template y nglf-else-------------------------------------
+//nglf else, para que si no cumple la condicion haga otra cosa y ng-template es la otra cosa con la referencia que se le ponga.
+
+//Ejemplo:
+<div *ngIf= "heroeBorrado != ''; else noborrado">
+    <h3>Heroe Borrado</h3>
+    <span>{{heroeBorrado}}</span>    
+</div>
+
+<ng-template #noborrado>
+    <h3>No ha borrado nada.</h3>
+</ng-template>
+-------------------------------------------------------------------------------------------------------
+
+-----------------------------Modulos-----------------------------------
+//Que es un modulo, el objetivo de los modulos es ayudarnos a agrupar componentes que tienen sentido entre sí. Cargandolos solo cuando sea necesario y de esa manera liberar carga del sistema.
+//Para ello:
+Dentro de la carpeta que queramos agrupar modulos, boton derecho nuevo archivo heroes.module.ts	(En este ejemplo he creado el modulo heroes para agrupar los componentes de heroes dentro de la carpeta heroes).
+
+//En archivo module.ts tenemos que importar lo necesario de un modulo, tener la clase del modulo y ponerle la declaracion NgModule necesaria. 
+Dentro de esta declaracion (declarations) estan los componentes que voy a tener en el modulo.
+Los exports son los que quiero hacer visibles fuera de este modulo.
+Los imports contienen modulos.
+
+//Ejemplo de modulo:
+import { CommonModule } from '@angular/common';
+import{ NgModule} from '@angular/core'
+import { HeroeComponent } from './heroe/heroe.component';
+import { ListadoComponent } from './listado/listado.component';
+
+@NgModule({
+    declarations:[
+        HeroeComponent,
+        ListadoComponent
+    ],
+    exports:[
+        ListadoComponent
+    ],
+    imports:[
+        CommonModule			
+    ]
+})
+export class HeroesModule{}
+//----Fin de ejemplo de modulo----
+
+//Para usar el modulo, en el app.module.ts en el apartado de imports, ponemos el nombre del modulo a importar, en este caso con HeroesModule
+-----------------------------------------------------------------------
+
+--------------Reconstruir node_modules-------------------
+//En la ruta del proyecto npm install y los reconstruira.
+----------------------------------------------------------
+
+---------------Generar Modulo automaticamente-------------
+ng g m dbz 	//Acortado generar modulo automaticamente
+----------------------------------------------------------
+
+--------------- Form module---------------------
+//Es una ayuda de angular para que los submit de nuestros formularios no refresquen la pantalla.
+
+//Importamos el modulo FormsModule en el module.ts del componente
+//En el form añadimos el ngSubmit vinculado al evento del ts:
+	<form (ngSubmit)="agregar( )">
+            <input type="text" placeholder="Nombre">
+            <input type="text" placeholder="Poder">   
+
+            <button type="submit">Agregar</button>
+	</form>
+
+//
+//Evento del form con ngSubmit
+  agregar(){    
+    console.log('Hey');
+  }
+
+//Si sigue refrescandose al aplicar el formulario *ng serve* de nuevo en el cmd.
+------------------------------------------------
