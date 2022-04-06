@@ -181,7 +181,7 @@ export class ListadoComponent implements OnInit {
 -----------------------------------------------------------------------------------------------
 
 ----------------------------- Directiva ngFor----------------------------------
-//Es un foreach en html para incluir el contenido de un array
+//Es un foreach en html para incluir el contenido de un array, agregar listado automaticamente(lista automaticamente)
 <ul>
  <li *ngFor="let heroe of heroes">
         {{heroe}}
@@ -233,7 +233,7 @@ Dentro de la carpeta que queramos agrupar modulos, boton derecho nuevo archivo h
 //En archivo module.ts tenemos que importar lo necesario de un modulo, tener la clase del modulo y ponerle la declaracion NgModule necesaria. 
 Dentro de esta declaracion (declarations) estan los componentes que voy a tener en el modulo.
 Los exports son los que quiero hacer visibles fuera de este modulo.
-Los imports contienen modulos.
+Los imports contienen modulos con los tipicos paquetes que aportan funcionalidades.
 
 //Ejemplo de modulo:
 import { CommonModule } from '@angular/common';
@@ -268,9 +268,15 @@ ng g m dbz 	//Acortado generar modulo automaticamente
 ----------------------------------------------------------
 
 --------------- Form module---------------------
+//No refrescar pantalla en forms
 //Es una ayuda de angular para que los submit de nuestros formularios no refresquen la pantalla.
 
 //Importamos el modulo FormsModule en el module.ts del componente
+imports: [
+    CommonModule,
+    FormsModule
+  ]
+
 //En el form añadimos el ngSubmit vinculado al evento del ts:
 	<form (ngSubmit)="agregar( )">
             <input type="text" placeholder="Nombre">
@@ -287,3 +293,123 @@ ng g m dbz 	//Acortado generar modulo automaticamente
 
 //Si sigue refrescandose al aplicar el formulario *ng serve* de nuevo en el cmd.
 ------------------------------------------------
+
+-------------------ngModel--------------------
+//[] en un form es para establecer alguna propiedad  y () para emitir o escuchar o eventos
+//En un form con [value] podemos acceder a un objeto
+<form (ngSubmit)="agregar()">
+            <input type="text" placeholder="Nombre" [value]="nuevo.nombre">
+            <input type="text" placeholder="Poder">   
+            <button type="submit">Agregar</button>
+        </form>
+
+//Para añadir eventos a un input text (textview evento) hay dos formas, mediante javascript o mediante ngModel, 
+//Mediante javascript:
+En el form -> <input type="text" placeholder="Nombre" [value]="nuevo.nombre" (input)="cambiarNombre( $event )">
+En el evento -> cambiarNombre(event: any){
+    console.log(event.target.value);
+  }
+
+//Mediante ngModel, podemos establecer el value y el evento, nota para establecer el value mediane [ngModel] debemos dar el atributo name a el input (la correcta en angular):
+<input type="text" placeholder="Nombre" name="pepe" [(ngModel)]="nuevo.nombre">	//[(ngModel)] con simplemente poner los parentesis le decimos que queremos que ponga el valor que se escriba en ese input en la propiedad que se indica, en este caso nuevo.nombre
+
+//Comprobar campo vacio de forma estricta:
+//El trim quita los espacios en blanco con esto podemos ver si esta vacio, === es igualdad estricta, compara por ejemplo a ver si es del mismo tipo tb, por si metes '10' y 10, verifica el tipo de dato y el valor y si es el mismo objeto, es decir tiene qwue ser una referencia a la misma variable
+    if(this.nuevo.nombre.trim().length === 0){
+      return;
+    }
+----------------------------------------------
+
+-----------Agregar a un listado desde input text (textview)-------------------
+//En html, añadimos la lista a li con el array que esta en ts y los eventos a los input para que cambie el objeto nuevo en el ts y el button de agregar
+<li *ngFor="let personaje of personajes">
+                {{personaje.nombre}} - {{personaje.poder}}
+</li>
+
+<form (ngSubmit)="agregar()">
+            <input type="text" placeholder="Nombre" name="pepe" [(ngModel)]="nuevo.nombre" (input)="cambiarNombre( $event )">
+            <!--<input type="text" placeholder="Nombre" [value]="nuevo.nombre" (input)="cambiarNombre( $event )">-->
+            <input type="text" placeholder="Poder" name="poder" [(ngModel)]="nuevo.poder">   
+            <button type="submit">Agregar</button>
+</form>
+
+//En ts tenemos un objeto y un array, con eventos modificamos las propiedades de ese objeto y al darle a agregar lo añadimos al array.
+			//Objeto
+					nuevo: Personaje ={
+   				            nombre:'',
+				    	    poder:0
+					}
+			//Array
+				personajes: Personaje[] = [
+  				 {
+   		 		   nombre: 'Goku',
+    				   poder: 15000
+  				 },
+  				 {
+    				   nombre:'Vegeta',
+    				   poder: 7500
+  				 }
+				]
+			//Evento agregar
+			   agregar(): void{    
+				//Comprobamos que no esten los campos vacios
+    				if(this.nuevo.nombre.trim().length === 0){
+      					return;
+    				}
+				//Insertamos el objeto nuevo en el array, el cual hemos modificado al escribir en los input con ngModel
+				this.personajes.push(this.nuevo)
+				//Reiniciamos el objeto nuevo para que la referencia no apunte al que acabamos de insertar
+				this.nuevo ={
+      					nombre: '',
+      					poder: 0
+    				}
+			   }
+------------------------------------------------------------------------------
+
+
+----------------------------Crear componentes hijos----------------------------
+//Para ahorrar codigo, por ejemplo en el caso del modulo dbz voy a hacer un componente de la parte de crear el listado y otro del formulario para poder invocarlos cuando quiera
+Creamos el componente, el cual no se exportara porque solo se utilizara cuando alguien lo imprima.
+Lo creamos con 
+ng g c dbz/personajes --skip-tests
+//Hecho esto, en donde queremos invocarlo en el html:
+<app-personajes></app-personajes>
+
+//El html del componente hijo contiene:
+<h3>Personajes</h3>
+        <hr>
+        <ul>
+            <li>Krillin - 700</li>
+            <!--Para pasar la información del personajes (que existe en el componente padre MainPageComponent)-->
+            <li *ngFor="let personaje of personajes">
+                {{personaje.nombre}} - {{personaje.poder | number}}
+            </li>
+</ul>
+
+//Esto nos da el error de que personajes existe en el componente padre y no en el hijo, para que el hijo tenga acceso a ello debemos en el .ts del hijo:
+export class PersonajesComponent {
+  //Con el input le decimos a angular que personajes va a venir del componente padre
+  @Input() personajes: any[] = [];
+}
+
+//Ahora debemos actualizar la utilizacion en el html que utilizabamos el componente hijo, ya que debemos indicarle que vamos a darle acceso al parametro:
+<app-personajes [personajes]="personajes"></app-personajes>		//Siendo [personajes] la variable que hemos indicado en el ts hijo y "personajes" la variable del componente padre
+
+//Podemos llamarlo de otra forma en vez de con [personajes], para ello:
+@Input("data") personajes: any[] = [];		//Incluimos el 'data' en el ts del componente hijo
+
+//Y a la hora de llamarlo en el componente que lo invocamos, cambiamos[personajes] por [data], data o como quieras llamarlo.
+
+//Como mejora, el tipado de any en  @Input() personajes: any[] = []; no mola asi que vamos a indicarle de que tipo es, para ello:
+1ºCreamos una carpeta dentro de dbz o de lo que englobe el modulo/componente y dentro un archivo dbz.interface.ts.
+2º En mi caso he quitado la interfaz de donde estaba y la he copiado en el archivo recien creado, para darle acceso a todos los componentes:
+export interface Personaje{
+  nombre:string;
+  poder: number;
+}
+3º Importamos la interfaz con control . donde sea necesario. -> import { Personaje } from '../interfaces/dbz.interface';
+4º Ahora podemos cambiar el tipo personaje: any por personaje: Personaje en el componente hijo.ts
+export class PersonajesComponent {
+  @Input('data') personajes: Personaje[] = [];
+}
+-------------------------------------------------------------------------------
