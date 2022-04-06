@@ -368,6 +368,7 @@ En el evento -> cambiarNombre(event: any){
 
 
 ----------------------------Crear componentes hijos----------------------------
+//Esta información se suele gestionar desde el main-page el cual gestiona a los hijos.
 //Para ahorrar codigo, por ejemplo en el caso del modulo dbz voy a hacer un componente de la parte de crear el listado y otro del formulario para poder invocarlos cuando quiera
 Creamos el componente, el cual no se exportara porque solo se utilizara cuando alguien lo imprima.
 Lo creamos con 
@@ -410,6 +411,158 @@ export interface Personaje{
 3º Importamos la interfaz con control . donde sea necesario. -> import { Personaje } from '../interfaces/dbz.interface';
 4º Ahora podemos cambiar el tipo personaje: any por personaje: Personaje en el componente hijo.ts
 export class PersonajesComponent {
-  @Input('data') personajes: Personaje[] = [];
+  @Input("data") personajes: Personaje[] = [];
 }
+--------------------OutPuts y EventEmitter------------****//mandar evento al padre
+//Tambien en vez de hacer un input en el hijo, podemos hacer un output, el cual emitira al componente padre el cambio en donde corresponda, funciona a la inversa del input.
+//EventEmitter es el tipo que le pondremos al dato que vamos a emitir, nota importante: debemos importarlo del core -> import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';		//Si no se importara de otro paquete.
+1º Emitimos el personaje
+  //Para emitir al componente padre, eventEmitter es un generico lo que quiere decir que puede ser cualquier cosa, para ello le indicamos e tipo que vamos a emitir
+  @Output("dataNuevoPersonaje") onNuevoPersonaje: EventEmitter<Personaje> = new EventEmitter<Personaje>();
+2º Lo emitimos al componente del padre:
+    this.onNuevoPersonaje.emit(this.nuevo);
+3º Tenemos que incluir el evento de emitir en el <app-agregar> o el que sea del componente concreto, donde el evento sera el que pongamos en el hijo al hacer el @Output:, mediante el event mandamos la variable que tiene el output como argumento
+<app-agregar [datanuevo]="nuevo" (dataNuevoPersonaje)="agregarNuevoPersonaje( $event )"></app-agregar>   
+5º Ponemos la funcion en el componente padre que vamos a disparar con el evento del output
+ agregarNuevoPersonaje( argumento: Personaje): void{
+    //Este metodo recibe un evento desde el hijo, habiendo cambiado previamente el contenido de nuevo:{} y lo inserta en el array. Recibe un personaje como argumento
+    console.log('Evento desde el hijo')
+    this.personajes.push(argumento)
+  }
+
+NOTA: El argumento lo estamos enviando al hacer el emit en el punto 2º.
+---------------------------------------****
+
 -------------------------------------------------------------------------------
+
+------------------------Depurar aplicacion---------------------------------------
+//Esto es ir lo de paso a paso
+1º Ponemos debugger; en el codigo de visual studio en la linea que queramos parar y cuando se ejecute en consola estara parado en esa linea
+//En chrome no funciona
+
+//DESDE VISUAL STUDIO:
+Pretamos f5 y al ejecutarla se para si establecemos los breakpoint en la linea que queramos con el punto rojo, 
+---------------------------------------------------------------------------------
+
+----------------------------------------Servicios-----------------------------------------------------
+//Los servicios se deben utilizar para manipular la informacion y los metodos de fuentes externas
+//Para crearlo.
+1º Creamos la carpeta en el modulo dbz por ejemplo, llamada services y dentro el archivo dbz.service.ts
+2º Creamos la clase que sera el servicio y le indicamos que esa clase sera un servicio con el decorador Injectable()
+
+import { Injectable } from "@angular/core";
+
+@Injectable()
+export class DbzService{
+    
+    constructor(){
+        console.log('Servicio inicializado');
+    }
+
+}
+
+3º Hay que indicar en el modulo que este servicio existe, en concreto en el apartado de providers:[]
+],exports:[
+    MainPageComponent
+  ],
+  providers:[
+    DbzService
+  ]
+4º Ahora deberiamos de mudar la logica necesaria del componente que requiera al servicio,
+
+5º Usamos el constructor de la clase del servicio donde queramos usarlo haciendo una inyeccion de dependencias del servicio:
+  constructor(private dbzService: DbzService){}			//Esta es la forma corta de hacer el constructor, en este caso esta en main-page.components.ts
+
+//La idea es que pongamos el servicio en el componente que queramos que lo inicie.
+//El servicio no se puede inicializar dos veces, solo se inicializa una y todos los hijos de ese servicio reciben la informacion, por lo tanto sirven para centralizar la información.
+//Gracias a los servicios podemos reducir enormemente la logica de la aplicacion.
+
+NOTA: Podemos observar si se ha inicializado el servicio en la consola del navegador en la linea inicial, ya que pone servicio inicializado.
+------------------------------------------------------------------------------------------------------
+
+-----------------------------------------Servicios centralizar el acceso a la informacion en el servicio-----------------------------------------------------------
+//La manipulacion de la informacion debe manipularse dentro de los servicios y no en los componentes.
+//En el main page, creamos el array de personajes vacio, y para que acceda al array que hemos mudado al servicio debemos incluir lo siguiente dentro del servicio que estabamos incluyendo en el constructor:
+constructor( private dbzService: DbzService){
+    this.personajes = this.dbzService.personajes
+  }
+
+//De esta manera igualamos nuestro array al que este en el servicio de DbzService
+
+//Lo anterior en el constructor funciona pero vamos a centralizar todo lo que sea manipular la informacion en el servicio, asi que lo quitamos del componente main-page.components.ts, para ello:
+1º Mediante get en la clase componente obtenemos la informacion por ejemplo en este caso del array,
+get personajes(): Personaje[]{
+  return this.dbzService.personajes;
+}
+//Esto indica que la variable personajes va a obtener un array de personajes desde el servicio.
+
+//OTRA MANERA DE HACERLO, para ello refactorizamos lo que hemos hecho, para hacer más seguro y mejor todo.
+1º La propiedad que vamos a cambiar en el servicio deberia de ser privada para que no se pueda modificar desde los componentes., el _variable es una conveccion en el nombre que indica que la variable va a ser privada.
+ private _personajes: Personaje[] = [
+        {
+          nombre: 'Goku',
+          poder: 15000
+        },
+        {
+          nombre:'Vegeta',
+          poder: 7500
+        }
+      ]
+2º Hacemos los get en el servicio para poder acceder desde fuera, en concreto de personajes que acabamos de poner privado.
+get personajes(): Personaje[]{
+          //El [...] rompe la referencia con la variable, es como decir separa la referencia con la variable this. de aqui y generate una copia en donde se invoque el get. Esto no es necesario en java, es sobre todo de javascript pero por buena practica se pone.
+        return [...this.personajes];
+}
+3º Ahora por ejemplo podemos retornar el arreglo de personajes del servidor desde otro componente, llamando al servicio y con un get en el componente:, por ejemplo desde la clase personajes.components.ts
+get personajes(){
+    return this.DbzService.personajes;
+}
+
+//Llamamos al servicio
+constructor( private DbzService: DbzService){}
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+-------------------------------------Despliegue aplicacion-----------------------------------------------
+//A la hora de hacer la app angular va a quitar muchas cosas que se utilizan para el ide.
+
+Generar build de producción*******************
+1º//Para generar la version de produccion:
+ng build --prod
+2º Genera un dist y este contiene la app.
+3º Vamos a https://www.netlify.com/ el cual es un hosting que nos va a servir para desplegar la web de ejemplo
+4º Tomamos el directorio y lo dejamos caer en la pagina web una vez logeados.
+5º Conclusion necesitamos un hosting para soltar el dist.
+
+**************************
+---------------------------------------------------------------------------------------------------------
+
+----------------Explicacion sergi-------------------------------
+[12:31] Sergi Palomeque Montoy
+no, eso no hace falta, a menos que te muevan para otro lado vaya, nosotros aquí con que sepamos de Angular , typescript, java, springboot e hibernate ya tiramos
+
+[12:31] Sergi Palomeque Montoy
+Y en front verás algunas etiquetas llamadas <Desy-xxxxx> que son del framework de Aragón que es una completa basura de utilizar
+
+
+
+
+Lo básico es:
+
+El .HTML te muestra por pantalla
+
+El .TS hace la lógica que haga falta para mostrar por pantalla lo que toque
+
+El .SERVICE.TS es el que te conecta el .TS con el Backend para hacer Post o Get o lo que sea
+
+Una vez de aquí ya pasamos al back en java
+
+El service.ts anterior te hace una llamada a un Endpoint que los localizamos en archivos xxxController.
+
+El controler llama a archivos xxxProvider que llaman a archivos xxxProviderImpl que es dónde se realiza la mayor parte de lógica.
+
+Cuando un providerImpl necesita recoger datos de la BBDD llama al archivo xxxRepository que es el que con Hibernate hace las llamadas a BBDD.
+
+Los datos recogidos se meten en Entidades (xxxxEntity)
+----------------------------------------------------------------

@@ -1,0 +1,14 @@
+------------------Caracteristicas---------------------
+-Inyeccion de Dependencia, MVC, WebFlux, JPA, AOP...
+-Spring Boot viene con un servidor TOMCAT ya preinstalado, optimizado para apps con spring.
+
+Tomcat -> es una opción reconocida entre los desarrolladores web para crear y mantener webs dinámicas y aplicaciones basadas en Java.
+Puedes utilizar Tomcat como contenedor de servlets para compilar y ejecutar aplicaciones web realizadas en Java, además de como servidor web autónomo en entornos con alto nivel de tráfico y alta disponibilidad.
+------------------------------------------------------
+
+-----------------Herramientas Necesarias-----------------
+JDK -> Se recomienda la 11 o la 13.
+Spring Tools IDE (Eclipse) -> Editor con herramientas.
+Maven -> Permite crear el proyecto, generando el archivo jar o war, yar, compilar, maneja las librerias del proyecto y las dependencias.
+MySQL 8 -> 
+---------------------------------------------------------
