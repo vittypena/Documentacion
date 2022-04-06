@@ -8,7 +8,59 @@ Puedes utilizar Tomcat como contenedor de servlets para compilar y ejecutar apli
 
 -----------------Herramientas Necesarias-----------------
 JDK -> Se recomienda la 11 o la 13.
+	//Para el jdk podemos irnos a openjdk.java.net o descargar el oficial.
+	//Copiamos en el entorno de variables en variables de usuario. C:\Program Files\Java\jdk1.8.0_202 en nueva poniendole un nombre de variable.
+	//Añadimos en path variables de usuarioC:\Program Files\Java\jdk1.8.0_202\bin
 Spring Tools IDE (Eclipse) -> Editor con herramientas.
+	//spring.io/tools la version de ecipse
 Maven -> Permite crear el proyecto, generando el archivo jar o war, yar, compilar, maneja las librerias del proyecto y las dependencias.
 MySQL 8 -> 
 ---------------------------------------------------------
+
+-----------------------IDE Spring Suite-----------------
+//El proyecto al levantarlo aparece abajo en local, una vez levantado e vez de abrir otro para no ocupar otro puerto lo relanzamos en el apartado de local.
+//O en vez de reiniciar de forma manual instalamos una dependencia, devtools, que permite reiniciar el servidor y aplicar cambios de forma instantanea.
+
+//Marketplace la tenemos en help, eclipse marketplace
+
+//Cambiar tema oscuro -> en la marketplace -> Darkest dark -> Despues de instalar preferences - general - appearance - theme
+--------------------------------------------------------
+
+-----------------------Crear proyecto-----------------
+De primeras el starter project para aprender, en el nombre del package debemos anteponer web a la ruta si la app es una web, en la penultima posicion.
+Elegimos el sdk que estamos utilizando y luego en la siguiente ventana instalamos las dependencias, en principio he instalado web web spring, dev tools y thymeleaf.
+
+Si marca error en las dependencias en la carpeta C:\Users\vmpena\.m2 tenemos las dependencias, podemos eliminarla y descargar de nuevo las dependencias, cerrando previamente antes el ide eliminando y abriendo el proyecto de nuevo.
+-------------------------------------------------------
+
+---------------------Archivos Spring--------------------------
+pom.xml	-> Contiene todas las dependencias, version de java usada...
+src/main/java -> Contiene las clases del proyecto
+src/main/resource -> 
+	/static -> Contiene los recursos del proyecto
+	/template -> Para guardar las plantillas de thymeleaf por ejemplo.
+	/application.properties -> En este archivo podemos sobreescribir toda la configuracion. No se puede colocar espacios en blanco al final de cada linea.
+maven dependencies -> Contiene todas las dependencias con su .jar y su version.
+target -> Cuando publiquemos y tengamos el .jar aqui se crea.
+--------------------------------------------------------------
+
+
+
+----------------------------------------Creando controlador y la vista--------------------------------------------
+Creamos un nuevo package en src/main/java llamado com.bolsadeideas.springboot.web.app.controlers y dentro una clase llamada IndexController.
+Una buena nomenclatura es que un controler la clase inicie en mayuscula y lleve al final Controler.
+Un controlador va a tener metodos de accion o handler que va a manejar una accion HTTP a formulario, por ejemplo para mostrar un form, cargar datos, listado, consultas bdd, guardar, insertar o eliminar bd...
+//Canda metodo handler o accion representa una web que hace algo y que trabaja con los datos de la app y esos datos se representan en una vista dentro de la respuesta. 
+El controlador se encarga de manejar las peticiones del usuario, mostrar la pagina con la respuesta que el usuario a solicitado.
+
+
+1º Añadimos el decorador @Controller a la clase y lo importamos con ctrl shift O.
+2º Ponemos nuestro primer metodo de ejemplo:
+public String index() {
+		//Cada metodo va a manejar una accion distinta
+		return "index";
+	}
+3º Como estamos retornando una vista, por lo tanto tenemos que crear una plantilla index.html, que se guardara en los recursos en templates.
+4º Mapear el metodo a una ruta o url, para cuando el cliente escriba index y se carge la vista index.html:
+@RequestMapping 	//e importarlo
+------------------------------------------------------------------------------------------------------------------
