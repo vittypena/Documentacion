@@ -30,7 +30,7 @@ MySQL 8 ->
 De primeras el starter project para aprender, en el nombre del package debemos anteponer web a la ruta si la app es una web, en la penultima posicion.
 Elegimos el sdk que estamos utilizando y luego en la siguiente ventana instalamos las dependencias, en principio he instalado web web spring, dev tools y thymeleaf.
 
-Si marca error en las dependencias en la carpeta C:\Users\vmpena\.m2 tenemos las dependencias, podemos eliminarla y descargar de nuevo las dependencias, cerrando previamente antes el ide eliminando y abriendo el proyecto de nuevo.
+Si marca error en las dependencias en la carpeta C:\Users\vmpena\.m2 tenemos las dependencias, podemos eliminarla y descargar de nuevo las dependencias, cerrando previamente antes el ide eliminando m2 y abriendo el proyecto de nuevo.
 -------------------------------------------------------
 
 ---------------------Archivos Spring--------------------------
@@ -55,12 +55,125 @@ El controlador se encarga de manejar las peticiones del usuario, mostrar la pagi
 
 
 1º Añadimos el decorador @Controller a la clase y lo importamos con ctrl shift O.
-2º Ponemos nuestro primer metodo de ejemplo:
-public String index() {
+2º Ponemos nuestro primer metodo de ejemplo, uno de mapear:
+//Mapear el metodo a una ruta o url, para cuando el cliente escriba index y se carge la vista index.html, por defecto es de tipo get, pero se puede indicar con , method=RequestMethod.GET o con @GetMapping.
+@RequestMapping(value = "/index")
+	public String index() {
 		//Cada metodo va a manejar una accion distinta
 		return "index";
 	}
 3º Como estamos retornando una vista, por lo tanto tenemos que crear una plantilla index.html, que se guardara en los recursos en templates.
 4º Mapear el metodo a una ruta o url, para cuando el cliente escriba index y se carge la vista index.html:
 @RequestMapping 	//e importarlo
+5ºPara crear la vista, en templates, new other, web, html file, si no aparece la version web https://marketplace.eclipse.org/content/eclipse-web-developer-tools-0
+index.html
+
+6º Lo ponemos en <meta charset="UTF-8"/>
+
+7º Archivo aplication.properties añadimos:
+spring.mvc.view.prefix=/WEB-INF/views/
+
+7º Arrancamos clic derecho run as spring boot app.
+
+8º Ahora en el navegador con /index podemos acceder
+
+9º Si queremos reiniciarla clic en local y restar, pero no levantemos otra.
 ------------------------------------------------------------------------------------------------------------------
+
+-----------------------------------------Pasar datos desde el controlador a la vista---------------------------------------------
+1º Incluimos Model model en el metodo como parametro o Modelmap
+2º Dentro del metodo model.addAttribute("titulo", "hola string framework");
+2bº Podemos hacer lo siguiente en vez del punto 1 y 2 que es exactamente igual, importando desde import java.util.Map;:
+public String index(Map<String, Object> model) {
+		model.put("titulo", "hola string framework");
+		return "index";
+	}
+2cº Tercera variacion:
+public ModelAndView index(ModelAndView mv) {
+		mv.addObject("titulo", "hola string framework");
+		mv.setViewName("index");
+		return mv;
+	}
+3º Añadimos como atributo al html del index.html lo siguiente para poder utilizar el atributo que hemos pasado en el titulo por ejemplo -> <html xmlns:th="http://www.thymeleaf.org">
+4º Usamos el dato con la siguiente sintaxis -> <title th:text="${titulo}"></title>
+
+Nota: La que más se utiliza es el Model.
+---------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------RequestMapping-----------------------------------------------------------------------
+//Con este mapeador la ruta va a ser accesible para todos los metodos del controlador.
+//Se pone de forma global, por lo tanto lo que vaya en el request mapping de la clase seria de primer nivel y lo de los metodos de segundo nivel.
+
+1º Lo ponemos como decorador de la clase -> @RequestMapping("/app")
+					    public class IndexController {
+2º Por lo tanto ahora para ir a la ruta deberemos de incluir donde antes incluiamos solo /index, con el app delante como primer nivel -> http://localhost:8080/app/index
+---------------------------------------------------------------------------------------------------------------------------------
+
+-------------------------------------------Introduccion Spring MVC----------------------------------------------------------------------------------------------- IMPORTANTE************************************************************
+//Es un framework web basado en MVC, modelo, vista y controlador, pudiendo inyectar dependencias, orientado al uso de interfaces y uso de clases POJO.
+
+//Las clases POJO son clases simples de las que he usado siempre con sus get set parametros y demas
+
+//El controlador trabaja los datos y renderiza la vista se los pasa a la clase POJO
+
+//Como funciona SPRING:
+Existe un front controller dentro de spring el cual se encarga de recibir las solicitudes , obtiene la ruta mapeada y va a buscar el controlador que corresponde y le asigna el request para obtener los datos que esta enviando., se llama DispatcherServlet
+El controlador se relaciona con los componentes service por ejemplo de angular y obtiene los datos de la consulta y se los envia a la vista para que los muestre.
+Le pasa los datos utilizando el model, map y lo visto en lo anterior., , se llama
+El controlador asigna el nombre logico de la vista, /app/index, , se llama handler mapping
+La vista por defecto es html, pero se puede configurar para que sea tipo PDF, EXCEL o lo que sea y finalmente la vista es mostrada al cliente usando los datos del model. , se llama view resolver.
+
+//Que hace un controlador?
+Proporciona acceso a la logica del negocio.
+Delega la logica a los servicios y estos acceden a las bases de datos mediante la interfaz DAO (objeto de acceso a datos)
+Los controladores reciben parametros del usuario mediante los input y lo convierten en un objeto del modelo.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-----------------------------------------------------El objeto model----------------------------------------------------------------------------------------------
+//Creamos un paquete llamado models y dentro de ella una clase llamada Usuario (POJO).
+
+
+Clase usuario:
+1º Ponemos atributos y generamos los getters and setters con alt shift s y generate... como atajo, sino desde boton derecho source.
+
+2º Creamos un event handler en el controlador, como funcion con el decorador que enlaza a la vista, con este controlador lo que haremos es crear un usuario y pasarselo a la vista /perfil. De normal sacariamos ese usuario de una BBDD:
+	@RequestMapping("/perfil")
+	public String perfil(Model model) {
+		
+		Usuario usuario = new Usuario();
+		usuario.setApellido("Pena");
+		usuario.setNombre("Victor");
+		model.addAttribute("usuario", usuario);
+		model.addAttribute("titulo", "Perfil del usuario: ".concat(usuario.getNombre()));	
+		
+		return "perfil";
+		
+	}
+
+3º Creamos el html perfil en templates, recordando incluir el atributo <html xmlns:th="http://www.thymeleaf.org"> en <html> y el "UTF-8/" en el meta.
+
+4º Ahora trabajamos con la información recibida en la vista, por ejemplo el nombre del usuario en un <span> para poder escribir (Recordar que pasamos el objeto usuario) -> <span th:text="${usuario.nombre}"></span>
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------If en thymeleaf-------------------------------------------------------------------------------------
+//Mostrar un email si este email existe mediante un if thymeleaf -> <span th:if="${usuario.email}" th:text="${usuario.email}"></span>
+
+//Escribir un mensaje si el usuario es nulo, mediante un if -> <span th:if="${usuario.email == null}" th:text="'El usuario no tiene correo'"></span>
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------Array en thymeleaf-------------------------------------------------------------------------------------
+1º Creamos la funcion con que pasara los datos a la vista en el controlador:
+@RequestMapping("/listar")
+	public String listar(Model model) {
+		List<Usuario> usuarios = new ArrayList<>();		
+		
+		model.addAttribute("titulo", "Listado Usuarios");
+		model.addAttribute("usuarios", usuarios);
+		
+		return "listar";
+}
+
+2º Creamos el html y su logica, por ejemplo que si esta vacio el array muestre algo -> <div th:if="${usuarios.size()==0}">No hay usuarios registrados</div>
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
