@@ -176,4 +176,45 @@ Clase usuario:
 2º Creamos el html y su logica, por ejemplo que si esta vacio el array muestre algo -> <div th:if="${usuarios.size()==0}">No hay usuarios registrados</div>
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+------------------------------------------------------------------------------------for-each en thymeleaf-----------------------------------------------------------------------------------------------------------
+3º Creamos un array y tal con usuarios en el Controller:
+
+4º Listamos los datos en una tabla con el foreach:
+<table>
+		<div th:if="${usuarios.size() > 0}">
+			<thead>
+				<tr>
+					<th>Nombre</th>
+					<th>Apellido</th>
+					<th>Email</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr th:each="usuario: ${usuarios}">					
+					<td th:text="${usuario.nombre}"></td>
+					<td th:text="${usuario.apellido}"></td>
+					<td th:text="${usuario.email}"></td>
+				</tr>
+			</tbody>
+		</div>
+</table>
+
+NOTA: A la hora de crear el array podemos simplificarlo usando la clase Arrays, de java util -> List<Usuario> usuarios = Arrays.asList(new Usuario("Andres", "Guzman", "andres@correo.com"), new Usuario("Jhon", "Doe", "jhon@correo.com"), new Usuario("Jane", "Pena", "jane@correo.com"));
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------@ModelAttribute-----------------------------------------------------------------------------------------------
+//Otra forma de pasar datos a la vista, es comun a todos los metodos del controlador, se usa cuando se quiere pasar a varios handle, en plan al /home, /listar, /perfil..., cuando se quiere usar en varias vistas.
+
+1º Ejemplo
+@ModelAttribute("usuarios")
+	public List<Usuario> poblarUsuarios(){
+		List<Usuario> usuarios = Arrays.asList(new Usuario("Andres", "Guzman", "andres@correo.com"), new Usuario("Jhon", "Doe", "jhon@correo.com"), new Usuario("Jane", "Pena", "jane@correo.com"));
+		
+		return usuarios;
+	}
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------@RequestParam-------------------------------------------------------------------------------------------------
+//Permite enviar parametros mediante url.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
