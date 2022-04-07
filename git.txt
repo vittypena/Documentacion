@@ -235,3 +235,8 @@ En este punto podemos hacer un git commit --amend, o git reset HEAD^ para volver
 //Cuando acabemos de editar: git rebase --continue, GRACIAS A ESTO TENEMOS EL COMMIT QUE ESTABA MAL GUARDADO Y LOS DOS NUEVOS QUE QUEREMOS
 
 git checkout -- README.md	//Nos reconstruye / regresa / devuelve SOLO el archivo readme del ultimo commit.
+
+
+--------------------------------------Dar seguimiento a ficheros grandes---------------------------------------------
+https://git-lfs.github.com/
+---------------------------------------------------------------------------------------------------------------------
