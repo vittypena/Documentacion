@@ -215,6 +215,137 @@ NOTA: A la hora de crear el array podemos simplificarlo usando la clase Arrays, 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ----------------------------------------------------------------@RequestParam-------------------------------------------------------------------------------------------------
-//Permite enviar parametros mediante url.
+//Permite enviar parametros mediante url del request HTTP GET - URL
+
+1º Capturamos el dato que introduciremos en la URL con @RequestParam(name="texto") en el metodo:
+	@GetMapping("/string")
+	public String param(@RequestParam(name="texto") String texto, Model model) {
+		model.addAttribute("resultado", "El texto enviado es" + texto);
+		return "params/ver";
+	}
+
+1bº Podemos poner requerido false para que si no recibe parametro no falle la pagina -> @RequestParam(name="texto", required = false)
+1cº Podemos poner un parametro por defecto si no recibe parametro -> (@RequestParam(name="texto", required = false, defaultValue = "Heyy")
+2º Recibimos el parametro con la variable resultado en el html ver:
+<div th:text="${resultado}"></div>
+3º Para probarlo podemos enviar manualmente el dato en la url > http://localhost:8080/params/string?texto=Hola%20que%20tal
+4º Tambien podemos enviar el parametro desde unos enlaces en otro .html mientras tenga la etiqueta @Request param:
+	<ul>
+		<li>
+			<a th:href="@{/params/string(texto='Hola Victor')}">Este link envia un parametro por URL</a>
+		</li>
+		<li>
+			<a th:href="@{/params/string(texto='Que tal')}">Este link es iwa</a>
+		</li>
+	</ul>
+
+//Enviar varios parametros por url y de distintos tipos***************
+1º En el controlados hacemos el metodo correspondiente:
+@GetMapping("/mix-params")
+	public String param(@RequestParam String saludo, @RequestParam Integer numero, Model model) {
+		model.addAttribute("resultado", "El texto enviado es: " + saludo + (numero*2));
+		return "params/ver";
+	}
+2º Lo enviamos por ejemplo con -> <a th:href="@{/mix-params/string(saludo='Que tal', numero=7)}">Este link es el multiparametros</a>
+
+
+//Otra forma de enviar parametros, permite que la clase que se retorna pueda obtener parametros, un string y un integer en este caso, lo que no sea string hay que convertirlo:
+@GetMapping("/mix-params-request")
+	public String param(HttpServletRequest request, Model model) {
+		String saludo = request.getParameter("saludo");
+		Integer numero = null;
+		try {		//Por si se mete un int que no salte error
+		numero = Integer.parseInt(request.getParameter("numero"));
+		}catch(NumberFormatException e) {
+			numero = 0;
+		}
+
+****************
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+---------------------------------------@PathVariable-------------------------------------------------------------
+//Otra forma de mandar parametros mediante URL pero esta vez en la ruta que estamos mapeando en los metodos handler. Este es mejor de normal.
+@GetMapping("/string/{parametroAenviar}")
+	public String variables(@PathVariable String parametroAenviar, Model model) {
+		model.addAttribute("titulo", "Recibir parámetros de la ruta(@PathVariable)");
+		model.addAttribute("resultado", "El texto enviado en la ruta es " + parametroAenviar);
+		return "variables/ver";
+	}
+
+//Enviar dos parametros con PathVariable:
+1º
+@GetMapping("/string/hey{parametroAenviar}/{numero}")
+	public String variables(@PathVariable String parametroAenviar,@PathVariable Integer numero, Model model) {
+		model.addAttribute("titulo", "Recibir parámetros de la ruta(@PathVariable)");
+		model.addAttribute("resultado", "El texto enviado en la ruta es " + parametroAenviar + " este numero: " + numero);
+		return "variables/ver";
+	}
+2º
+@GetMapping("/")
+	public String index(Model model) {
+		model.addAttribute("titulo", "Enviar parámetros a la ruta(@PathVariable)");
+		return "variables/index";
+	}
+3º Hcemos un html y enviamos el dato -> <il><a th:href="@{/variables/string/} + 'Saludos Andres' + '/' + 7">Saludos Andres</a></il>
+-----------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------Agregar recursos estaticos y estilos CSS----------------------------------
+//Se guardan en la carpeta static dentro de resources.
+//El css se guarda dentro de static en una carpeta css
+
+//Podemos agregarlos en el html mediante (la vista):
+<img th:src="@{/images/spring.png}"></img>
+<link rel="stylesheet" type="text/css" th:href="@{/css/style.css}"></link>		//Para una especie de importar todo el css
+//Nota "@{}" es como poner la ruta por defecto del proyecto, por eso luego continua con lo que interesa.
+
+----------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------Inyectar valores con @Value------------------------------------------------
+//Podemos desacoplar textos del controlador y llevarlos a otro lado por ejemplo el applicatio.properties e inyectar a atributos con @Value.
+//De esta manera podremos usar los string centralizando desde propierties y aplicar cambios globales con un solo cambio.
+
+//Podemos quitar los warnings amarillos dejando el raton encima y añadiendolo al metadata, esta informacion se puede observar en el META-INF.
+
+1º Para inyectar values, creamos una variable de tipo String y le ponemos la ruta que tendra en el properties, la cual debe de ser la ruta donde se va a poner esa variable:
+@Value("${texto.indexcontroller.index.titulo}")
+	private String textoIndex;
+
+2º En el properties debemos tener:
+texto.indexcontroller.index.titulo: hola string framework con Model desde properties!
+
+3º Para usarlo:
+@GetMapping({"/index","/home","/"})
+	public String index(ModelMap model) {
+		model.addAttribute("titulo", textoIndex);
+		return "index";
+	}
+
+NOTA: EL NOMBRE PUEDE SER CUALQUIERA SI COINCIDE  CON EL DE PROPIERTIES; PERO LA COSA ES QUE TENGA SENTIDO E IDENTFIQUE LA RUTA EN LA QUE ESTA
+@Value("${pepe.paquito.peresoso.poca}")
+	private String textoIndex;
+
+**************
+//Se pueden guardar en otros propierties.
+1º Creamos un archivo .propierties, por ejemplo textos.propierties en la raiz de resources.
+
+2º Ahora debemos de indicarle al framework que este fichero va a ser usado para ello tenemos que crear una clase .conf en la raiz, asi que en el caso de spring, en la raiz el primer paquete de src, donde esta el SpringBootWebApplication.java, creamos TextosPropertiesConfig (esta es la nomenclatura) y añadimos el siguiente contenido:
+package com.bolsadeideas.springboot.web.app;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.PropertySources;
+
+@Configuration
+@PropertySources({
+	@PropertySource("classpath: textos.properties"),
+	@PropertySource("classpath: textos.meh")
+})
+public class TextosPropertiesConfig {
+
+}
+
+//clashpath  es dnd estan los recursos
+//Se pueden poner muchos .properties con la ,
+
+**************
+-------------------------------------------------------------------------------------------------------------------------
