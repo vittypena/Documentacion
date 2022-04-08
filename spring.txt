@@ -349,3 +349,329 @@ public class TextosPropertiesConfig {
 
 **************
 -------------------------------------------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------Retornar redirect y forward como respuesta en los controladores--------------------------------------------------------------------------------------------
+//Es para redirigir a otra ruta:
+1º Creamos el controlador HomeController, el cual tendra un metodo y ese metodo redirijira al IndexController, desde la raiz.:
+@Controller
+public class HomeController {
+	@GetMapping("/")
+	public String home() {
+		return "forward:/app/index";
+		//return "redirect:https://www.google.com";
+		//return "redirect:/app/index";
+	}
+}
+
+//La opcion ideal para implementar una pagina de inicio seria con forwar, esto lo hace por debajo sin cambiar la ruta del navegador de forma visible.
+//return forward:/app/index	  		//Redirige a la ruta pero sin recargar la pagina, lo hace por debajo.
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------Despliegue y ejecucion desde terminal(deploy)---------------------------------------------------------------------------------------------
+//En la ruta del archivo:
+.\mvnw.cmd package
+
+//Luego lo compilamos en la misma ruta:
+java -jar .\target\spring-boot-web-0.0.1-SNAPSHOT.jar
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------Clase Service-------------------------------------------------------------------------------------------------
+//Se encarga de trabajar con los datos, es una fachada de los objetos DAO, realiza consultas y operaciones en las tablas...
+1º Creamos un paquete en el paquete models llamado service.
+2º Creamos la clase  MiServicio
+
+3º La clase contiene cualquier proceso que vaya a ser un servicio:
+public class MiServicio {
+	
+	public String operacion() {
+		return "ejecutando algun proceso importante...";
+	}
+}
+
+4º Incorporamos el servicio en el IndexController:
+@Controller
+public class IndexController {
+	
+	private MiServicio servicio = new MiServicio();
+	
+	@GetMapping({"/", "","/index"})
+	public String index(Model model) {
+		model.addAttribute("objeto", servicio.operacion());
+		return "index";
+	}
+}
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------Implementar inyeccion dependencia-----------------------------------------------------------------------------
+//La idea es desacoplar el new MiServicio, la idea es que se pueda inyectar y manegar con el controlador de spring.
+
+1º Para ello ponemos la anotacion @Component  o @Service(es lo mismo pero como fachara como buena practica) en el servicio para declarar que se puede inyectar.
+@Component
+public class MiServicio {
+	
+	public String operacion() {
+		return "ejecutando algun proceso importante...";
+	}
+}
+
+2º Quitamos  = new MiServicio() de la clase controladora, ya que lo vamos a desacoplar e inyectar y lo dejamos con @Autowired:
+	@Autowired
+	private MiServicio servicio;
+
+De esta forma acoplamos un servicio sin inyectarlo.
+
+
+
+****************************
+INYECTAR MEDIANTE INTERFACE
+****************************
+//Se trata de desacoplar el tipo de la clase y aplicarlo mediante una interfaz por si en el futuro cambiamos el nombre de la clase que no tengamos que cambiarlo en todos los controller.
+1º Creamos una interfaz en el paquete modes.service llamada IServicio, boton derecho new interface.
+public interface IServicio {
+	public String operacion();
+}
+2º Implementamos la interfaz en el servicio.vaja (MiServicio.java) -> public class MiServicio implements IServicio{
+
+3º Añadimos el @Override al metodo que estamos sobrescribiendo en MiServicio.java que ha implementado la interface:
+@Component
+public class MiServicio implements IServicio{
+	
+	@Override
+	public String operacion() {
+		return "ejecutando algun proceso importante...";
+	}
+}
+
+4º Ahora podemos usar la interfaz para inyectar como tipo generico:
+	@Autowired
+	private IServicio servicio;
+
+Nota: Es una buena practica darle al service.java un identificador al @Component o @Service para poder saber de donde viene:
+@Component("miServicio")
+public class MiServicio implements IServicio{
+
+NOTA2: TODO COMPONENTE QUE SEA UNA CLASE DEBE DE TENER UN CONSTRUCTOR VACIO
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------Teoria Inyeccion de Dependencia-----------------------------------------------------------------------------------------------
+¿Que es la Inyección de Dependencia?
+Suministra a un objeto una referencia de otro que este registrado como por ejemplo con @Component
+
+//@Component es un estereotipo generico para cualquier componente manejado por Spring, @Repository, @Service y @Controller son especializaciones de@Component para usos más específicos.
+@Repository para persistencia, componentes que acceden a los datos (DAOs)
+@Service para servicios de lógica de negocio
+@Controller para controladores MVC - Modelo Vista Controller
+
+//Bean se utiliza para referirse a cualquier componente manejado por Spring.
+Deben ser anotados con @Component o derivados, constructor vacio por defecto, sin argumentos y estos son manejados por el contenedor DI de Spring.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------- Inyeccion de dependencias por constructor y metodos setters-----------------------------------------------------------------
+//Es una alternativa a inyectar mediante @Autowired, mediante setters:
+//Por ejemplo mediante constructor todos los parametros que esten dentro los inyecta:
+	
+	private IServicio servicio;
+	
+	@Autowired
+	public IndexController(IServicio servicio) {
+		this.servicio = servicio;
+	}
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------- @Primary----------------------------------------------------------------------------------------------------
+//Se usa cuando estamos inyectando en otra clase algo que ya esta implementado en otra, para marcar como primario en el que lo pongamos.
+@Component("miServicioComplejo")
+@Primary
+public class MiServicioComplejo implements IServicio{
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------- @Qualifier -------------------------------------------------------------------------------------------
+//Para inyectar si no es primary y ya esta inyectado primary podemos inyectar mediante @Qualifier.
+
+//Tenemos que ponerle un nombre a @Component("miservicioComplejo") en el servicio.
+
+//A la hora de llamarlo en el controller añadimos Qualifier
+	@Autowired
+	@Qualifier("miservicioComplejo")
+	private IServicio servicio;
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------Alternativa para registrar componentes mediante @Bean--------------------------------------------------------
+1º Para ello creamos una clase configuracion:
+package com.bolsadeideas.springboot.di.app;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+
+import com.bolsadeideas.springboot.di.app.models.service.IServicio;
+import com.bolsadeideas.springboot.di.app.models.service.MiServicio;
+
+@Configuration
+public class AppConfig {
+	
+	@Bean("miServicioSimple")
+	@Primary
+	public IServicio registrarMiServicio() {
+		return new MiServicio();
+	}
+	
+	@Bean("miServicioComplejo")
+	
+	public IServicio MiServicioComplejo() {
+		return new MiServicio();
+	}
+}
+
+//Si son clases nuestras lo hacemos con el otro metodo y si son apis frameworks de 3ro tiene que ser con el metodo de @configuration y @bean
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+----------------------------------------------------------------------------------Ejemplo Factura-------------------------------------------------------------------------------------
+1º Como son clases POJO creamos un package dentro de models, llamado .entity, tener en cuenta que debe de ser app.models.entity. A veces tb se le llama domain al package.
+2º Creamos dentro la clase Cliente por ejemplo.
+3º Ejemplo de Cliente.java:
+package com.bolsadeideas.springboot.di.app.models.entity;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+@Component
+public class Cliente {
+	
+	@Value("${cliente.nombre}")
+	private String nombre;
+	@Value("${cliente.apellido}")
+	private String apellido;
+
+	public String getNombre() {
+		return nombre;
+	}
+
+	public void setNombre(String nombre) {
+		this.nombre = nombre;
+	}
+
+	public String getApellido() {
+		return apellido;
+	}
+
+	public void setApellido(String apellido) {
+		this.apellido = apellido;
+	}
+
+}
+
+//Esta anotado como componente spring porque en este caso esta clase va a ser usada por spring, peor no siempre es necesario anotarlo como @Component
+
+
+4º En el fichero AppConfig.java añadimos el siguiente metodo @Beans para que spring pueda trabajar con estas clases POJO que he creado, en concreto con itemsFactura, gracias a esto podemos inyectarlo sin hacer new ItemFactura mememe:
+@Bean("itemsFactura")
+	public List<ItemFactura> registrarItems(){
+		Producto producto1 = new Producto("Camara Sony", 100);
+		Producto producto2 = new Producto("Bicicleta Bianchi", 200);
+				
+		ItemFactura linea1 = new ItemFactura(producto1, 2);
+		ItemFactura linea2 = new ItemFactura(producto2, 2);
+		
+		return Arrays.asList(linea1, linea2);
+	}
+
+5º Ahora creamos la clase controladora de estas clases POJO:
+package com.bolsadeideas.springboot.di.app.controllers;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.bolsadeideas.springboot.di.app.models.entity.Factura;
+
+@Controller
+@RequestMapping("/factura")
+public class FacturaController {
+	
+	@Autowired
+	private Factura factura;
+	
+	@GetMapping("/ver")
+	public String ver(Model model) {
+		model.addAttribute("factura", factura);
+		model.addAttribute("titulo", "Ejemplo Factura con inyección de dependencia");
+		return "/ver";
+	}
+}
+
+6º Creamos la vista /ver:
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title th:text="${titulo}"></title>
+</head>
+<body>
+<h1 th:text="${titulo}"></h1>
+<h3 th:text="${factura.descripcion}"></h3>
+<div>Cliente: <span th:text="${factura.cliente.nombre + ' ' + factura.cliente.apellido}"></span></div>
+<h4>Detalle de la factura</h4>
+<table>
+<thead>
+<tr>
+<th>Producto</th>
+<th>Precio</th>
+<th>Cantidad</th>
+<th>Total</th>
+</tr>
+</thead>
+<tbody>
+<tr th:each="item ${factura.items}">
+	<td th:text="${item.producto.nombre}"></td>
+	<td th:text="${item.producto.precio}"></td>
+	<td th:text="${item.cantidad}"></td>
+	<td th:text="${item.producto.precio * item.cantidad}"></td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>
+
+//NOTA para solucionarlo lo de los acentos en los archivos .propierties, boton derecho en application properties y cambiamos a utf-8 o por ejemplo y asi con todos:
+para acento en la e Andrés -> Andr&eacute;s
+en la a  Guzmán-> Guzm&aacute;n
+
+//NOTA 2 para solucionar lo de los acentos en los html en vez de -> <div>Cliente: <span th:text="${factura.cliente.nombre + ' ' + factura.cliente.apellido}"></span></div>, añadimos una u a th:utext
+<div>Cliente: <span th:utext="${factura.cliente.nombre + ' ' + factura.cliente.apellido}"></span></div>
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-----------------------------------------------------Ciclo de vida de un componente--------------------------------------------------------------
+*****************
+@PostConstruct
+*****************
+	@PostConstruct
+	public void inicializar() {		
+		cliente.setNombre(cliente.getNombre().concat(" ").concat("Jose"));
+		descripcion = descripcion.concat("del cliente").concat(cliente.getNombre());
+	}
+//Se ejecuta justo despues de crear el objeto y que se hayan inyectado las dependencias, por lo tanto podemos cambiar algun valor del cliente for example.
+
+****************
+@OnDestroy
+****************
+	@PreDestroy
+	public void destruir() {
+		System.out.println("Factura destruida".concat(descripcion));
+	}
+-------------------------------------------------------------------------------------------------------------------------------------------------
+
+-------------------------------------------------Contexto (Scote) de los componentes-------------------------------------------------------------------
+//Por defecto usamos una sola instancia de cada componente, (singleton), peor podmeos cambiarlo.
+1º Cambiar factura de tipo singleton a request, por ejemplo, esto sirve para que la factura solo dure lo que dura la peticion http y no toda la sesion del navegador, muy util:
+@Component
+@RequestScope
+public class Factura {
+2º
+-------------------------------------------------------------------------------------------------------------------------------------------------------
