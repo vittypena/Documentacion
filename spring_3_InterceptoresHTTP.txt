@@ -81,3 +81,191 @@ Estas tareas han de ser de apoyo, transversales.
 7º Lo recogemos en la vista:
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------
+//Registramos el interceptor mediante una clase de configuracion.
+1º Creamos la clase de configuracion:
+	package com.bolsadeideas.springboot.form.app;
+
+	import org.springframework.beans.factory.annotation.Autowired;
+	import org.springframework.beans.factory.annotation.Qualifier;
+	import org.springframework.context.annotation.Configuration;
+	import org.springframework.web.servlet.HandlerInterceptor;
+	import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+	import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+	@Configuration
+	public class MvcConfig implements WebMvcConfigurer{
+
+		//Inyectamos el HandlerInterceptor que es TiempoTranscurridoInterceptor, lo estamos inyectando mediante su interfaz, para inyectarlo
+		//lo hemos puesto como @component y le hemos dado un nombre para poder inyectar ese en concreto mediante el qualifier.
+		@Autowired
+		@Qualifier("tiempoTranscurridoInterceptor")
+		private HandlerInterceptor tiempoTranscurridoInterceptor;
+	
+		@Override
+		public void addInterceptors(InterceptorRegistry registry) {
+			//Agregamos el interceptor
+			registry.addInterceptor(tiempoTranscurridoInterceptor);
+		}
+	
+	}
+
+//Asi tal y como esta el interceptor se va a aplicar a todas las rutas, pero podemos ponerlo para solo una ruta, por ejemplo -> registry.addInterceptor(tiempoTranscurridoInterceptor).addPathPatterns("/form/**", "/admin/usuarios");	//Para que se ejecuten en estas rutas
+2º Mostrar el valor en la vista:
+	<div class="alert alert-success">
+		<span th:text="'Tiempo Transcurrido: ' + ${tiempoTranscurrido} + ' en milisegundos'"></span>
+	</div>
+3º Podemos hacer una comprobacion extra  y obtener detalles del metodo que esta interceptando en controlador con:
+	@Override
+	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+			throws Exception {	
+		if(handler instanceof HandlerMethod) {
+			HandlerMethod metodo = (HandlerMethod) handler;
+			logger.info("es un metodo del controlador: " + metodo.getMethod().getName());		
+		}
+---------------------------------------------------------------------------------------
+
+------------------------------------------------- Reutilizar fragmentos de codigo de las plantillas en thymeleaf ----------------------------------------
+//Esto en angular es distinto
+//Añadimos la plantilla en una carpeta llamda componentes, al ser una plantilla el head lo quitamos.
+1º Contenido de la plantilla:
+	<!DOCTYPE html>
+	<html xmlns:th="http://www.thymeleaf.org">
+	<body>
+	<!-- Section se usa para indicar una seccion o componente que podemos reutilizar, th:fragment es un identificador para agregar -->
+		<section th:fragment="interceptor">
+			<div class="alert alert-success">
+				<span
+					th:text="'Tiempo Transcurrido: ' + ${tiempoTranscurrido} + ' en milisegundos'"></span>
+			</div>
+		</section>
+	</body>
+	</html>
+
+2º Lo incluimos en otro html de la siguiente manera, primero la ruta y luego el nombre que le hemos dado a ese componente en el section:
+	<section th:replace="componentes/tiempoTranscurrido:: interceptor"></section>
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------Interceptor en una sola ruta----------------------------------------------------------------------
+//Modificamos el registry.addInterceptor
+	registry.addInterceptor(tiempoTranscurridoInterceptor).addPathPatterns("/form/**");
+
+//Mostrar el interceptor cuando los datos sean distintos de null solo:
+	<div class="alert alert-success" th:if="${tiempoTranscurrido != null}">
+
+//Como aplicarlo en la misma ruta pero en el @GetMapping y no en el @PostMapping, en el interceptor, añadimos un if para comparar si el request es post o get:
+	@Override
+	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+			throws Exception {
+		
+		if(request.getMethod().equalsIgnoreCase("post")){
+				return true;
+		}
+	@Override
+	public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
+			ModelAndView modelAndView) throws Exception {
+		if(request.getMethod().equalsIgnoreCase("post")){
+			return;											//Retornamos un void, ya que es lo que se retorna en este metodo.
+		}
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------- Retornar false en interceptores------------------------------------------------------------------
+//Por ejemplo si falla el login de usuario retornar un false y que el metodo del controlador no se invoque:		
+		//Redirigir si falla la validacion a otra ruta 
+		response.sendRedirect(request.getContextPath().concat("/login");
+		return false;		
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-------------------------------------------------------------- Interceptor para validar horario -------------------------------------------------------------------
+//Este servira para validar un horario y si estamos dentro de el continuara con la ejecucion del controlador y si no retornara una pagina alternativa.
+1º Creamos el controlador:
+	@Controller
+	public class AppController {
+	
+		@Value("${config.horario.apertura}")
+		private Integer apertura;
+
+		@Value("${config.horario.cierre}")
+		private Integer cierre;
+	
+		@GetMapping({"/", "/index"})
+		public String index(Model model) {
+			model.addAttribute("titulo","Bienvenido al horario de atencion a clientes");
+			return "index";
+		}
+	
+		@GetMapping("cerrado")
+		public String cerrado(Model model) {
+		
+			StringBuilder mensaje = new StringBuilder("Cerrado, por favor visítenos desde las ");
+			mensaje.append(apertura).append(" y hasta las ").append(cierre).append(" hrs. Gracias.");
+			model.addAttribute("titulo", "Fuera del horario de antención");		
+			model.addAttribute("mensaje", mensaje);
+			return "cerrado";
+		}
+	}
+1bº Creamos el index.html y el application.yml para las cadenas de texto.
+2º Creamos el interceptor:
+	@Component("HorarioInterceptor")
+	public class HorarioInterceptor implements HandlerInterceptor {
+
+		@Value("${config.horario.apertura}")
+		private Integer apertura;
+
+		@Value("${config.horario.cierre}")
+		private Integer cierre;
+
+		@Override
+		public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+				throws Exception {
+
+			// Obtenemos la hora actual
+			Calendar calendar = Calendar.getInstance();
+			int hora = calendar.get(calendar.HOUR_OF_DAY);
+
+			if (hora >= apertura && hora < cierre) {
+				StringBuilder mensaje = new StringBuilder("Bienvenido al horario de atención a clientes");
+				mensaje.append(", atendemos desde las ");
+				mensaje.append(apertura);
+				mensaje.append("hrs. hasta las ");
+				mensaje.append(cierre).append("hrs. Gracias por tu visita");
+
+				// Pasamos el mensaje en el request
+				request.setAttribute("mensaje", mensaje.toString());
+				return true;
+			}
+			// Si es falso lo redirigimos a otro sitio
+			response.sendRedirect(request.getContextPath().concat("/cerrado"));
+			return false;
+		}
+
+		@Override
+		public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
+				ModelAndView modelAndView) throws Exception {
+			// Obtenemos el mensaje del request
+			String mensaje = (String) request.getAttribute("mensaje");
+
+			// Pasamos el mensaje a la vista
+			modelAndView.addObject("mensajeHorario", mensaje);
+		}
+
+	}
+3º Configurar el interceptor en la clase msvcconfig, para registrarlo en el stack, la creamos en app, llamada -> MvcConfig, importante anotarlo como clase configuradora:
+	@Configuration
+	public class MvcConfig implements WebMvcConfigurer {
+
+		@Autowired
+		@Qualifier("HorarioInterceptor")
+		private HandlerInterceptor horario;
+
+		@Override
+		public void addInterceptors(InterceptorRegistry registry) {
+			registry.addInterceptor(horario).excludePathPatterns("/cerrado");
+		}
+
+	}
+4º Ahora redirigira fuera de horario a cerrado, la cosa es que siempre hara eso debido a que el interceptor esta aplicandose en todas las rutas, asi que debemos aplicarlo solo en la de index:
+	registry.addInterceptor(horario).addPathPatterns("/index");
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
