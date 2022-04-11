@@ -1,0 +1,83 @@
+--------------------------------------------------------Teoria Interceptor-------------------------------------------------------------
+Aportan funcionalidades especificas para ciertas peticiones HTTP y es transversal a nuestra aplicacion es decir son fragmentos de codigo reutilizables que interceptan un metodo del controlador para agregar funcionalidaades.
+Se usa para autenticacion, autorizcion, loggin y transacciones.
+Se aplican en los metodos del controlador antes o despues de ejecutar el metodo o cuando se haya reenderizado la vista.
+
+Se implementan mediante la interfaz HandlerInterceptor o extender de HandlerInterceptorAdapter.
+
+Estas tareas han de ser de apoyo, transversales.
+---------------------------------------------------------------------------------------------------------------------------------------
+
+-------------------------------------------------------- Calcular tiempo transcurrido de la peticion HTTP-----------------------------------------------
+1º Creamos el package com.bolsadeideas.springboot.form.app.interceptores
+2º Creamos la clase TiempoTranscurridoInterceptor con la interfaz implements HandlerInterceptor.
+3º Sobrescribimos  los metodos pre y despues del handle con ctrol alt s y over...
+	@Component
+	public class TiempoTranscurridoInterceptor implements HandlerInterceptor{
+
+		@Override
+		public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+				throws Exception {
+			//Si es false termina con la ejecucion del interceptor
+			//Object recibe el objeto que representa el metodo  y Response tiene toda la informacion del metodo, nombre, argumentos...., Request para redigirir...  
+			return true;
+		}
+
+		@Override
+		public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
+				ModelAndView modelAndView) throws Exception {
+			//ModelAndView es para pasar datos a la vista, por ejemplo el tiempo calculado en que tardo en ejecutar el request.
+		}
+	
+	}
+
+4º Añadimos el log para poder registrar los eventos en el, este atributo los registrara (importamos de slfj4...):
+	public class TiempoTranscurridoInterceptor implements HandlerInterceptor{
+		private static final Logger logger = LoggerFactory.getLogger(TiempoTranscurridoInterceptor.class);
+
+5º Ponemos el logger en ambos metodos -> logger.info("TiempoTranscurridoInterceptor: preHandle() entrando ..."); y lo mismo con el de post cambiando el mensaje.
+
+6º Calculamos el tiempo emulandolo, ya que si no el valor seria muy pequeño debido a las caracteristicas de nuestra app web:
+	@Override
+	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+			throws Exception {
+		//Si es false termina con la ejecucion del interceptor
+		//Object recibe el objeto que representa el metodo  y Response tiene toda la informacion del metodo, nombre, argumentos...., Request para redigirir...
+		logger.info("TiempoTranscurridoInterceptor: preHandle() entrando ...");
+		//Calculamos el tiempo
+		
+		long tiempoInicio = System.currentTimeMillis();
+		//Lo guardamos en el request
+		
+		request.setAttribute("tiempoInicio", tiempoInicio);
+		
+		//Emulamos una demora
+		Random random = new Random();
+		Integer demora = random.nextInt(500); //Entre 0 y 499		
+		Thread.sleep(demora);
+		
+		return true;
+	}
+
+	@Override
+	public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
+			ModelAndView modelAndView) throws Exception {
+		
+		//Calculamos el tiempoTranscurrido restando el tiempo Fin menos el tiempo Inicio que habiamos registrado.
+		long tiempoFin = System.currentTimeMillis();
+		//Capturamos el tiempo de inicio con el request.getA... y lo casteamos a un objeto Long ya que se ha guardado como un tipo Objeto
+		long tiempoInicio = (Long)request.getAttribute("tiempoInicio");
+		long tiempoTranscurrido = tiempoFin - tiempoInicio;
+		
+		//Pasamos el dato a la vista, validando antes la vista
+		if(modelAndView != null) {
+			modelAndView.addObject("tiempoTranscurridoDesdeInterceptor", tiempoTranscurrido);
+		}
+		
+		//ModelAndView es para pasar datos a la vista, por ejemplo el tiempo calculado en que tardo en ejecutar el request.
+		logger.info("Tiempo Transcurrido: " + tiempoTranscurrido + "milisegundos");
+		logger.info("TiempoTranscurridoInterceptor: postHandle() saliendo ...");
+	}
+7º Lo recogemos en la vista:
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
