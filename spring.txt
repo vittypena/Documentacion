@@ -568,7 +568,7 @@ public class Cliente {
 
 
 4º En el fichero AppConfig.java añadimos el siguiente metodo @Beans para que spring pueda trabajar con estas clases POJO que he creado, en concreto con itemsFactura, gracias a esto podemos inyectarlo sin hacer new ItemFactura mememe:
-@Bean("itemsFactura")
+	@Bean("itemsFactura")
 	public List<ItemFactura> registrarItems(){
 		Producto producto1 = new Producto("Camara Sony", 100);
 		Producto producto2 = new Producto("Bicicleta Bianchi", 200);
