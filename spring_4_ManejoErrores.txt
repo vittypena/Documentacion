@@ -1,0 +1,121 @@
+---------------------------------------------------  Personalizar error 500 ----------------------------------------------
+//Es un error interno del sistema.
+//Podemos personalizar los distintos errores que recibimos, con mensajes por defecto.
+1º Creamos el directorio error en templates, tiene que llamarse asi en especifico.
+2º Dentro podemos crear una vista html para cada codigo de error, 500.html en este caso:
+	<body>
+		<h3>Ha ocurrido un error Oops!</h3>
+		<!-- error y message viene interiorizado en la plantilla -->
+		<div th:text="${error}"></div>
+		<div th:text="${message}"></div>
+		<div th:text="${error}"></div>
+		<div th:text="${message}"></div>
+		<div th:text="${status}"></div>
+		<div th:text="${timestamp}"></div>
+		<hr>
+		<div th:text="${trace}"></div>
+	</body>
+---------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------  Personalizar error 404 ----------------------------------------------
+//Es un error de que la pagina no existe.
+//Podemos personalizar los distintos errores que recibimos, con mensajes por defecto.
+1º Creamos el directorio error en templates, tiene que llamarse asi en especifico.
+2º  Dentro podemos crear una vista html para cada codigo de error, 404.html en este caso:
+	<body>
+		<h3>Lo sentimos, página no encontrada 404!</h3>
+		<!-- error y message viene interiorizado en la plantilla -->
+		<div th:text="${error}"></div>
+		<div th:text="${status}"></div>
+		<div th:text="${timestamp}"></div>
+		<hr>
+		<div th:text="${path}"></div>
+	</body>
+---------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------- Personalizar una Excepcion --------------------------------------------------------------
+1º Creamos una clase por ejemplo ErrorHandlerController en app y la anotamos con @ControllerAdvice.
+2º Ahora se mapea a una excepcion con @ExceptionHandler, con @ExceptionHandler{(ArithmeticException.class)} podemos poner más excepciones en caso de querer:
+	@ControllerAdvice
+	public class ErrorHandlerController {
+	
+		@ExceptionHandler(ArithmeticException.class)
+		public String aritmeticaError(ArithmeticException ex, Model model) {
+			model.addAttribute("error", "Error de aritmética");
+			model.addAttribute("message", ex.getMessage());
+			model.addAttribute("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+			model.addAttribute("timestamp", new Date());
+			return "error/aritmetica";
+		}
+	}
+3º Ahora mostramos esos datos en la vista personalizada de esa excepcion:
+	<body>
+		<h3 th:text="${error}"></h3>
+		
+		<div th:text="${message}"></div>
+		<div th:text="${status}"></div>
+		<div th:text="${timestamp}"></div>
+	</body>
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------- Crear error personalizado para un objeto en concreto --------------------------------------------------
+1º En el package com.bolsadeideas.springboot.error.app.errors creamos la clase UsuarioNoEncontradoException y antes de crearla en superclase buscamos por java.lang.RuntimeException.
+	public class UsuarioNoEncontradoException extends RuntimeException {
+
+		private static final long serialVersionUID = 1L;
+
+		public UsuarioNoEncontradoException(String id) {
+			super("El usuario con ID: ".concat(id).concat(" no existe en el sistema"));
+		}
+
+	}
+2º En el GetMapping donde buscabamos el usuario lanzamos la excepcion personalizada:
+	@GetMapping("/ver/{id}")
+	public String ver(@PathVariable Integer id, Model model) {
+		Usuario usuario = usuarioService.obtenerPorId(id);
+		
+		if(usuario == null) {
+			throw new UsuarioNoEncontradoException(id.toString());
+		}
+3º Añadimos al ErrorHanlder que hemos creado en ejercicios anterior esta clase con los erroes personalizados:
+	@ControllerAdvice
+public class ErrorHandlerController {
+	@ExceptionHandler(UsuarioNoEncontradoException.class)
+	public String usuarioNoEncontradoException(UsuarioNoEncontradoException ex, Model model) {
+		model.addAttribute("error", "Error usuario no encontrado!!");
+		model.addAttribute("message", ex.getMessage());
+		model.addAttribute("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+		model.addAttribute("timestamp", new Date());
+		return "error/usuarioNoEncontrado";
+	}
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------- Lanzamiento Excepcion pero usando objetos creados con Api Optional de Java 8 -------------------------------------------------------------------
+//La idea es hacer un metodo obtenerPorId pero usando el API Optional, que nos facilita mucho trabajar con objetos, encapsulando el objeto y dentro d eest eoptional validar si el objeto existe y manejar excepciones en caso de que no existe.
+1º Implementamos el metodo en la interfaz, con la clase Optional de java utils, pasandole el objeto:
+	public Optional<Usuario> obtenerPorIdOptional(Integer id);
+
+2º Implementamos el metodo de esa interfaz, usando el metodo obtenerid que teniamos, de esta manera es más seguro:
+	@Override
+	public Optional<Usuario> obtenerPorIdOptional(Integer id) {
+		Usuario usuario = this.obtenerPorId(id);
+		return Optional.ofNullable(usuario);
+	}
+3º Ahora lo usamos de otra manera:
+	@GetMapping("/ver/{id}")
+	public String ver(@PathVariable Integer id, Model model) {
+		/*
+		Usuario usuario = usuarioService.obtenerPorId(id);
+		
+		if(usuario == null) {
+			throw new UsuarioNoEncontradoException(id.toString());
+		}*/
+		Usuario usuario = usuarioService.obtenerPorIdOptional(id).orElseThrow(() -> new UsuarioNoEncontradoException(id.toString()));
+		model.addAttribute("usuario", usuario);
+		model.addAttribute("titulo", "Detalle usuario: ".concat(usuario.getNombre()));
+		return "ver";
+	}
+
+//NOTA: podemos usar distintos metodos en vez de el orElseThrow, este lo que hace es si no existe lanza la excepcion personalizada con una expresión lambda
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
