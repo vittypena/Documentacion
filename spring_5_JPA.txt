@@ -332,4 +332,273 @@ INSERT INTO clientes (id, nombre, apellido, email, create_at) VALUES(2, 'Jhohn',
 5º Cambiamos la inyeccion del controlador del IClienteDao al IClienteService -> private IClienteService clienteService;
 
 //Este patro de diseño se llama Facade, es una practica recomendada en vez de implementar los Dao de forma directa en el controlador.
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------ Implementando el Dao con la interface CrudRepository ---------------------------------------------------------------------
+//Con esto podemos implementar nuestro componente de acceso a datos Dao con la interfaz CrudRepository, la cual es propia del Api de Spring Data Jpa.
+
+//Documentacion: https://spring.io/projects/spring-data
+https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#repositories
+
+Los metodos para utilizar van construidos por debajo de la interfaz.
+
+//Esto es como lo hice anteriormente, pero de forma automatica.
+
+//Puede heredad de CrudRepository o de JpaRepository, la diferencia es que Jpa incluye otros metodos, por ejemplo para paginacion, ordenamiento...
+
+//Las consultas personalizadas hay que tener cuidado porque son a nivel de objeto no a nivel de tablas, por lo tanto no vale la sintaxis sql.
+
+//Tambien se pueden usar nombres de metodos para las query pero con ciertas reglas, por ejemplo findBy'Atributo'And|Or'Atributo', pongo una comparacion a continuacion:
+	List<User> findByEmailAddressAndLastname(String emailAddress, String lastname = select u from User u where u.emailAddress = ?1 and u.lastname = ?2
+
+***********************************************************
+**	Modificar el proyecto con un ejemplo de esto     **
+***********************************************************
+1º Eliminamos Cliente DaoImpl porque la idea es modificar la interfaz Dao y limpiamos los metodos de nuestra interfaz Dao.
+
+2º Convertimos nuestra interfaz  ICLienteDao.java en el crudRepository:
+	public interface IClienteDao extends CrudRepository<Cliente, Long>{
+		//Como primer parametro el tipo de dato de nuestra clase Entity y como segundo parametro el tipo de la key (id)
+		//No hace falta anotarla como @Repository para inyectarla debido a que es una interfaz especial, que hereda de CrudRepository, por debajo ya es un componente Spring, no es necesario indicarlo con anotaciones
+	}
+
+3º Ahora tenemos que modificar el ClienteServiceImpl para que use los metodos de el repository:
+	@Service
+	public class ClienteServiceImpl implements IClienteService {
+
+		@Autowired
+		private IClienteDao clienteDao;
+
+		@Override
+		@Transactional(readOnly = true)
+		public List<Cliente> findAll() {
+			return (List<Cliente>) clienteDao.findAll();
+		}
+
+		@Override
+		@Transactional
+		public void save(Cliente cliente) {
+			clienteDao.save(cliente);
+		}
+
+		@Override
+		@Transactional(readOnly = true)
+		public Cliente findOne(Long id) {
+			return clienteDao.findById(id).orElse(null);
+		}
+
+		@Override
+		@Transactional
+		public void delete(Long id) {
+			clienteDao.deleteById(id);
+		}
+
+	}
+//Es una forma mucho más simple y más facil de trabajar con Jpa.
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------- Cambiando H2(Datasource) a Mysql---------------------------------------------------------------------------------------------
+*****************************************
+**   Conexion application.properties   **
+*****************************************
+spring.datasource.url=jdbc:mysql://localhost/db_springboot
+spring.datasource.username=root
+spring.datasource.password=Chun1ni995.
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.jpa.database-platform=org.hibernate.dialect.MySQL8Dialect
+
+//Podemos añadir la siguiente linea para hacer pruebas, a efecto de probar y desarrollar y crear las tablas a traves de los @entity y cuando paramos la aplicacion las elimina por completo e importa lo del import.sql que tengamos:
+spring.jpa.hibernate.ddl-auto=create-drop
+
+//Linea para que nos muestre las consultas nativas que genera jpa por debajo:
+logging.level.org.hibernate.SQL=debug
+
+//Si nos da error de servertimezone modificamos la primera linea -> spring.datasource.url=jdbc:mysql://localhost/db_springboot?serverTimezone=Europe/Madrid&UseSSL=false
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------ Mensaje despues de guardar, eliminar o lo que sea, Flash Messenger ------------------------------------------------
+1º Añadimos RedirecAttributes flash en el metodo del controlador que queramos:
+	@PostMapping("/form")		//Guardamos en la bd
+	public String guardar(Cliente cliente, SessionStatus status, RedirectAttributes flash) {
+		flash.addAttribute("success", "Cliente Creado con exito!");
+
+2º En el html lo manejamos segun el mensaje.
+	
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------- Paginacion para BBDD Jpa-------------------------------------------------------------------------------
+//Es importante cuando la cantidad de registros es importante, mejoramos el rendimiento ya que no traemos todos los registros a la vez.
+
+1º En el repository tenemos que extender de PagingAndSortingRepository:
+	public interface IClienteDao extends PagingAndSortingRepository<Cliente, Long>{}
+
+2º En el IClienteService, añadimos un nuevo metodo, Pageable lo importamos del springframework...domain:
+	public Page<Cliente> findAll(Pageable pageable);		//Retorna un page que es un iterable
+
+3º En el ClienteService importamos el metodo y lo modificamos:
+	@Override
+	public Page<Cliente> findAll(Pageable pageable) {
+		return clienteDao.findAll(pageable);
+	}
+
+4º En el controlador implementamos la paginacion, antes estabamos recibiendo todos los registros, ahora con esto no:
+	4aº Obtenemos la pagina actual mediante la ruta url con @RequestParam()
+		@GetMapping("/listar")					//Pasamos el listado de clientes a la vista
+		public String listar(@RequestParam(name="page", defaultValue="0") int page, Model model) {
+		
+			Pageable pageRequest = PageRequest.of(page, 5);		//Mostramos 4 registros por pagina, se pueden colocar los que quieras
+		
+			Page<Cliente> clientesPaginacion = clienteService.findAll(pageRequest);		//Invocamos el listar todo pero paginable del service
+		
+			PageRender<Cliente> pageRender = new PageRender<>("/listar", clientesPaginacion);
+			model.addAttribute("titulo", "Listado de clientes");
+			model.addAttribute("clientes", clientesPaginacion);			//Pasamos el cliente paginado
+			model.addAttribute("page", pageRender);
+			return "listar";
+		}
+
+5º Hay que crear una clase que calcule desde donde hasta donde y a medida que vamos avanzando va corriendo hata los ultimos registros, o retrocediendo, creamos el package com.bolsadeideas.springboot.app.paginator y la clase PageRender, para calcular como se gestionan los registros por pagina y mostrarlos todos:
+public class PageRender<T> {
+	private String url;
+	private Page<T> page;
+
+	private int totalPaginas;
+
+	private int numElementosPorPagina;
+
+	private int paginaActual;
+
+	private List<PageItem> paginas;
+	
+	public PageRender(String url, Page<T> page) {
+		this.url = url;
+		this.page = page;
+		this.paginas = new ArrayList<PageItem>();
+
+		numElementosPorPagina = page.getSize();
+		totalPaginas = page.getTotalPages();
+		paginaActual = page.getNumber() + 1;
+
+		int desde, hasta;
+		if (totalPaginas <= numElementosPorPagina) {
+			desde = 1;
+			hasta = totalPaginas;
+		} else {
+			if (paginaActual <= numElementosPorPagina / 2) {
+				desde = 1;
+				hasta = numElementosPorPagina;
+			} else if (paginaActual >= totalPaginas - numElementosPorPagina / 2) {
+				desde = totalPaginas - numElementosPorPagina + 1;
+				hasta = numElementosPorPagina;
+			} else {
+				desde = paginaActual - numElementosPorPagina / 2;
+				hasta = numElementosPorPagina;
+			}
+		}
+		for(int i=0 ; i < hasta; i++) {
+			paginas.add(new PageItem(desde + i, paginaActual == desde + i));
+		}
+	}
+
+	public String getUrl() {
+		return url;
+	}
+
+	public int getTotalPaginas() {
+		return totalPaginas;
+	}
+	public int getPaginaActual() {
+		return paginaActual;
+	}
+
+	public List<PageItem> getPaginas() {
+		return paginas;
+	}
+	
+	public boolean isFirst() {
+		return page.isFirst();
+	}
+	
+	public boolean isLast() {
+		return page.isLast();
+	}
+	
+	public boolean isHasNext() {
+		return page.hasNext();
+	}
+	
+	public boolean isHasPrevious() {
+		return page.hasPrevious();
+	}
+}
+
+6º  Faltaria crear una clase para representar cada una de las paginas, tendra el numero de pagina e indicara si es el numero actual. Creamos la clase PageItem:
+	public class PageItem {
+	private int numero;
+	private boolean actual;
+	
+	public PageItem(int numero, boolean actual) {	
+		this.numero = numero;
+		this.actual = actual;
+	}
+
+	public int getNumero() {
+		return numero;
+	}
+
+	public boolean isActual() {
+		return actual;
+	}
+	
+}
+
+7º Crear la el fragmento html del paginador:
+	<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+	<nav th:fragment="paginator">
+
+		<ul class="pagination">
+			<li class="page-item"
+				th:class="${page.first? 'page-item disabled': 'page-item'}"><span
+				class="page-link" th:if="${page.first}">Primera</span> <a
+				class="page-link" th:if="${not page.first}"
+				th:href="@{${page.url}(page=0)}">Primera</a></li>
+
+
+			<li class="page-item"
+				th:class="${not page.hasPrevious? 'page-item disabled': 'page-item'}">
+				<span class="page-link" th:if="${not page.hasPrevious}">&laquo;</span>
+				<a class="page-link" th:if="${page.hasPrevious}"
+				th:href="@{${page.url}(page=${page.paginaActual-2})}">&laquo;</a>
+			</li>
+
+			<li class="page-item" th:each="item : ${page.paginas}"
+				th:class="${item.actual? 'page-item active': 'page-item'}"><span
+				class="page-link" th:if="${item.actual}" th:text="${item.numero}"></span>
+				<a class="page-link" th:if="${not item.actual}"
+				th:href="@{${page.url}(page=${item.numero-1})}"
+				th:text="${item.numero}"></a></li>
+
+
+			<li class="page-item"
+				th:class="${not page.hasNext? 'page-item disabled': 'page-item'}">
+				<span class="page-link" th:if="${not page.hasNext}">&raquo;</span> <a
+				class="page-link" th:if="${page.hasNext}"
+				th:href="@{${page.url}(page=${page.paginaActual})}">&raquo;</a>
+			</li>
+
+			<li class="page-item"
+				th:class="${page.last? 'page-item disabled': 'page-item'}"><span
+				class="page-link" th:if="${page.last}">&Uacute;ltima</span> <a
+				class="page-link" th:if="${not page.last}"
+				th:href="@{${page.url}(page=${page.totalPaginas-1})}">&Uacute;ltima</a>
+			</li>
+		</ul>
+
+	</nav>
+
+</body>
+</html>	
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
