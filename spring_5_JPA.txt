@@ -602,3 +602,106 @@ public class PageRender<T> {
 </body>
 </html>	
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------- Asociaciones ManyToOne Bidireccional -----------------------------------------------------
+//Clases entity factura y cliente, el client epuede tener muchas facturas y la factura aun cliente, por ello many to one
+1º Creamos la clase factura y la mapeamos como entity:
+	@Entity
+	@Table(name="facturas")
+	public class Factura implements Serializable {
+		/**
+		 * 
+		 */	
+		@Id
+		@GeneratedValue(strategy=GenerationType.IDENTITY)
+		private static final long serialVersionUID = 1L;
+
+		private Long id;
+		private String descripcion;
+		private String observacion;
+	
+		@Temporal(TemporalType.DATE)
+		@Column(name="create_at")
+		private Date createAt;
+		private Cliente cliente;
+
+		public Long getId() {
+			return id;
+		}
+
+		public void setId(Long id) {
+			this.id = id;
+		}
+
+		public String getDescripcion() {
+			return descripcion;
+		}
+
+		public void setDescripcion(String descripcion) {
+			this.descripcion = descripcion;
+		}
+
+		public String getObservacion() {
+			return observacion;
+		}
+
+		public void setObservacion(String observacion) {
+			this.observacion = observacion;
+		}
+
+	public Date getCreateAt() {
+		return createAt;
+	}
+
+	public void setCreateAt(Date createAt) {
+		this.createAt = createAt;
+	}
+
+	public Cliente getCliente() {
+		return cliente;
+	}
+
+	public void setCliente(Cliente cliente) {
+		this.cliente = cliente;
+	}
+
+}
+
+2º En la clase cliente que ya teniamos añadimos el atributo facturas:
+	private List<Factura> facturas;
+
+	public Cliente() {					
+		facturas = new ArrayList<Factura>();
+	}
+
+	...
+
+	public List<Factura> getFacturas() {
+		return facturas;
+	}
+
+	public void setFacturas(List<Factura> facturas) {
+		this.facturas = facturas;
+	}
+
+	public void addFactura(Factura factura) {		//Este es opcional
+		facturas.add(factura);
+	}
+
+3º Mapeamos facturas con clientes con la anotacion, @ManyToOne, ya que las facturas son muchas para un cliente, lo de 1:M y eso:
+//Indicamos el tipo de fetch, con LAZY, ya que el EAGER trae todo de una sola vez, con lazy se realizan de forma perezosa a medida que se van invocando los metodos, para obtener los datos
+	@ManyToOne(fetch=FetchType.LAZY)
+	private Cliente cliente;
+
+4º Mapeamos clientes con facturas, con la anotacion, @OneToMany, ya que los clientes son uno para muchas facturas.
+	@OneToMany(mappedBy="cliente", fetch=FetchType.LAZY, cascade=CascadeType.ALL)	//Aqui la carga perezosa es con más razón, ya que llamaria a todas las facturas de cada cliente y no vamos a mostrar todas esas facturas, asi que lo ideal es ir cargandolas segun se necesita
+	private List<Factura> facturas;
+	//cascade=CascadeType.ALL, significa que todas las operaciones delete y persist se van a realizar en cadena, por ejemplo si el cliente se elimina se elimina de forma automatica a todas sus facturas, todos sus elementos hijos.
+	//mappedBy="cliente" Le asignamos el atributo de la otra clase de la relacion (en este caso como se llama el id cliente en facturas), con esto hacemos que sea bidireccional, de forma automatica va a crear la llave foranea cliente id en la tabla facturas.
+
+5º Creamos la clase ItemFactura y por lo tanto el atributo ItemFactura en factura, el cual sera una lista, en este caso al no ser bidireccional la relacion Factura-
+-ItemFactura debemos hacer el @JoinColumn(name="factura_id") para indicar cual es la clave foranea en item_factura, que ademas sera un atributo de esta. En cliente al ser bidireccional lo hace con el mapped (esta en el cliente)
+	@OneToMany(fetch=FetchType.LAZY, cascade=CascadeType.ALL)
+	@JoinColumn(name="factura_id")
+	private List<ItemFactura> items;
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
