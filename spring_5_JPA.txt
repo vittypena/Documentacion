@@ -1,0 +1,604 @@
+---------------------------------------------------------------------Diferencia entre JPA e Hibernate------------------------------------------------------
+JPA es una especificacion, propone como implementar un ORM Standar en java, significa api de persistencia de java.
+
+Hibernate es un framework que implementa este estandar, springboot trabaja por defecto con hibernate como proveedor de jpa.
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------Creamos el projecto JPA ------------------------------------------------------------------------------------------------------------------------------------------------------
+1º Dependencias, seleccionamos, spring boot devtools, spring data JPA para hibernate, el driver de la BBDD, thymeleaf y spring web y h2 para hacer BBDD automaticas por pereza.
+
+//Creamos la clase Entity
+*******************
+** Clase Entity  **
+*******************
+2º Crear la clase entity, utilizar JPA y mapearlo con la BBDD.
+	2aº Creamos el package -> com.bolsadeideas.springboot.app.models.entity
+	2bº Creamos la clase que va a estar mapeada a la tabla, una clase de JPA, un entity -> Cliente
+	2cº Decoramos la clase con @Entity de javax.persistence.Entity
+	2dº OPCIONAL, si omitimos la notacion @table la clase se llamara igual que la tabla de la BD.
+	2eº Anotamos la clase con @Table, que es para configurar el nombre de la tabla. La nomenclatura aconseja poner el nombre de la tabla en pular y minuscula -> @Table(name="clientes")
+	2fº Implementamos serializable en la clase -> implements Serializable
+	2gº Implementamos el serialVersionUID(dejando el raton encima y añadir), esto es recomendado porque muchas veces se trabaja con serializacion para almacenarlo y transmitirlo a la memoria -> private static final long serialVersionUID = 4327690299451102763L;
+3º Introducimos la clave primaria de tipo long y la forma en la que vamos a generar la clave primaria, por defecto es autoincremental -> 
+	@Id
+	@GeneratedValue(strategy=GenerationType.IDENTITY)		//En mysql en otracle es .SEQUENCE
+	private Long id;
+
+4º Introducimos los demás campos:
+	private String nombre;
+	private String apellido;
+	private String email;
+
+	private Date createAt;
+
+5º Si los nombres de los attributos son distintos a los del campo de la BD podemos indicarlo con @Column, aqui tambien podemos decir si acepta nulos y el largo:
+	@Column(name="nombre_cliente")
+	private String nombre; 
+
+6º Si tenemos fecha, tenemos que indicar con @Temporal el formato en el que va a guardar este campo en la BBDD y darle formato a la hora de introducirlo con DateTimeFormat.
+	@Temporal(TemporalType.DATE)
+	@DateTimeFormat(pattern="yyyy-MM-d")
+	private Date createAt;
+
+7º Creamos los metodos Getter and Setter.
+
+//Creamos la clase DAO
+*******************
+**   Clase DAO	 **
+*******************
+//Esta clase es la de acceso a Datos, se encarga de acceder a los datos y se implementa con JPA a traves del entity.
+
+1º Creamos el package -> com.bolsadeideas.springboot.app.models.dao	, la interfaz en dao -> IClienteDao con este metodo abstracto -> public List<Cliente> findAll();
+
+2º Creamos la clase ClienteDaoImpl y agregamos la interfaz creada.
+
+3º Decoramos la clase con la notacion de @Repository, la cual es una notacion de spring para marcar la clase como componente de acceso a datos. 
+
+4º Ponemos el entityManager el cual se encarga de manejar las clases de entidades, persiste su ciclo de vida y puede realizar consultas, actualizarlas, elimiarlas es decir todas las operaciones de la BD pero a nivel de objeto a travs de las clases entity JPA .
+Van a la clase entity no a la tabla, la clase esta mapeada a la tabla:
+	private EntityManager em;
+
+5º Para hacer una consulta aprovechando el metodo que retorna una lista:
+
+	@SuppressWarnings("unchecked")		//Debido a que da un warning inofensivo lo suprimimos
+	@Transactional(readOnly=true)		//Esta notacion sirve para que sea de solo lectura al ser solo una consulta, si fuese un insert (persist) podemos omitirlo, el import ha de ser de springframework
+	@Override
+	public List<Cliente> findAll() {
+		
+		return em.createQuery("from Cliente").getResultList();			//Realizamos una consulta con createQuery que retorna el listado cliente
+	}
+
+6º Inyectamos el entityManager con la anotacion @PersistenceContext. Lo hace de forma automatica si no configuramos ningun tipo de bd en el application properties. En este ejemplo usara h2 embedida en nuestra app.
+	@PersistenceContext
+	private EntityManager em;
+
+//Creamos la clase controladora con el handler listar
+******************
+**  Controlador	**
+******************
+1º Creamos el package controllers y la clase ClienteController, decorandola con @Controller.
+
+2º Creamos el metodo listar con el getMapping, inyectamos la interfaz y pasamos los datos a la vista:
+	@Controller
+	public class ClienteController {
+	
+		@Autowired							//Con esta anotación va a buscar un componente registrado en el contenedor que implemente la interfaz cliente dao, busca un BEANS.
+		@Qualifier("clienteDaoJPA")
+		private IClienteDao clienteDao;		//Siempre ha de ser el tipo más generico, en este caso la interfaz
+	
+		@GetMapping("/listar")
+		public String listar(Model model) {
+			model.addAttribute("titulo", "Listado de clientes");
+			model.addAttribute("clientes", clienteDao.findAll());	//Pasamos el listado de clientes a la vista
+			return "listar";
+		}
+	}
+
+//Creamos la vista listar
+*****************
+**   Vista     **
+*****************
+1º Creamos listar.html en templates:
+	<!DOCTYPE html>
+	<html xmlns:th="http://www.thymeleaf.org">
+	<head>
+	<meta charset="UTF-8"/>
+	<title th:text="${titulo}"></title>
+	</head>
+	<body>
+	<h1 th:text="${titulo}"></h1>
+
+	<table>
+		<thead></thead>
+			<tr>
+				<th>id</th>
+				<th>nombre</th>
+				<th>apellido</th>
+				<th>email</th>
+				<th>fecha</th>
+			</tr>
+		<tbody><!-- Iteramos por cada objeto cliente dentro del objeto que hemos pasado -->
+			<tr th:each="cliente: ${clientes}">
+				<td th:text="${cliente.id}"></td>
+				<td th:text="${cliente.nombre}"></td>
+				<td th:text="${cliente.apellido}"></td>
+				<td th:text="${cliente.email}"></td>
+				<td th:text="${cliente.createAt}"></td>
+			</tr>
+		</tbody>
+	</table>
+	</body>
+	</html>
+
+**************************
+**  Archivo Import Sql  **
+**************************
+//Creamos un archivo import en recursos de tipo file con los datos de prueba al no tener una BBDD.
+//IMPORTANTE llamarlo import.sql
+
+Contenido del import.sql ->
+	/* Populate tables */
+INSERT INTO clientes (id, nombre, apellido, email, create_at) VALUES(1, 'Andres', 'Guzman', 'profesor@bolsadeideas.com', '2017-08-28');
+INSERT INTO clientes (id, nombre, apellido, email, create_at) VALUES(2, 'Jhohn', 'Doe', 'john.doe@gmail.com', '2017-08-28');
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------- Consola H2 Database de springboot --------------------------------------------------------------
+//En la url -> h2-console
+
+//En el properties o yml -> spring.h2.console.enabled=true
+
+//Por defecto la BD es el que te diga en la consola al arrancar la app en la linea de available, ejemplo  jdbc:h2:mem:31741281-35bd-4083-a507-f9e0490c972a y el usuario sa sin clave.
+
+//Podemos introducir la conexion manual en el .properties:
+	spring.datasource.url=jdbc:h2:mem:clientesdb
+	spring.datasource.username=andres
+	spring.datasource.password=sa
+	spring.datasource.driver-class-name=org.h2.Driver
+	spring.h2.console.enabled=true
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------Agregando crear en repositorio Dao y controlador ---------------------------------------------
+*********************************************
+**    Crear un nuevo registro con JPA.     **
+*********************************************
+
+1º Agregamos el metodo para poder crear en la interfaz dl cliente, pura buenas practicas -> public void save(Cliente cliente);
+
+2º Implementamos el metodo en la clase Dao, mediante persist con ayuda del entity manager:
+	@Transactional
+	@Override
+	public void save(Cliente cliente) {
+		em.persist(cliente);
+	}
+
+3º Implementamos el metodo GetMapping para pasar el objeto Usuario al formulario y despues con el GetPost lo creamos con los datos del form:
+
+	@GetMapping("/form")
+	public String crear(Model model) {		
+		Cliente cliente = new Cliente();		
+		model.addAttribute("cliente",cliente);
+		model.addAttribute("titulo", "Formulario de cliente");
+		return "form";
+	}
+	@PostMapping("/form")
+	public String guardar(Cliente cliente) {	//Recibe el objeto cliente que viene con los datos poblados y lo guarda
+		clienteDao.save(cliente);
+		return("redirect:listar");
+	}
+
+4º Vista form.html: Importante tener un input hidden con el id -> <input type="hidden" th:field="*{id}"> 
+
+5º Agregamos un metodo en el cliente prePersist, antes de que se guarde en la BBDD la fecha justo antes de invocar el persist (para guardar en la BD), con la anotacion @PrePersist:
+	@PrePersist
+	public void prePersist() {		//Se ejecuta justo antes de que se guarde en la base de datos
+		createAt = new Date();		//Pone la fecha actual
+	}
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------  Agregando Editar en BD  ------------------------------------------------------------------------
+1º Modificamos la interfaz IClienteDato -> public Cliente findOne(Long id);
+
+2º Añadimos el metodo en CLienteDao:
+	@Override
+	@Transactional(readOnly=true)
+	public Cliente findOne(Long id) {			//Editar, retorna el id para que podamos editar en ese id en concreto
+		return em.find(Cliente.class, id);
+	}
+
+3º Añadimos el metodo en el controlador:
+	@RequestMapping(value="/form/{id}")					//Editar, @pathvariable es para pasarle el id mediante la url
+	public String editar(@PathVariable(value="id") Long id, Model model) {
+		Cliente cliente = null;
+		
+		if(id>0) {
+			cliente = clienteDao.findOne(id);
+		}else {
+			return "redirect://listar";	//Redirijimos por seguridad si es igual a 0			
+		}
+		model.addAttribute("cliente", cliente);
+		model.addAttribute("titulo", "Editar Cliente");
+		return "form";
+	}
+4º Añadimos en link a la vista del controlador en la vista form, se le pasa la ruta + el id que hemos recogido, por eso lo del requestMapping:
+	<td><a th:href="@{/form/} + ${cliente.id}" th:text="'Editar'" class="btn btn-primary btn-x"></a></td>
+
+5º Ahora añadimos un mecanismo en el controlador, para ello modificamos el metodo save del ClienteDaoImpl.java y segun el id hara una cosa u otra, para insertar si el id en la vista form no existe o es igual a 0 o editar si es mayor que 0:
+	@Transactional
+	@Override
+	public void save(Cliente cliente) {	//Crear
+		if(cliente.getId() != null && cliente.getId() > 0) {	//Si es nulo el id y es mayor que 0 significa que estamos editando, por lo tanto editaremos y no crearemos de 0
+			em.merge(cliente);			//Merge actualiza un objeto ya existente
+		}else {
+			em.persist(cliente);		//Persist crea un objeto en la bd
+		}				
+	}
+
+//Otra forma de editar mas segura, es quitar el input hidden id en el form, crear una session en el controlador guardando el objeto cliente y pasarla a la vista, una vz ejecutado el metodo guardar del post en la bd, eliminar la session.
+	@Controller
+	@SessionAttributes("cliente")
+	public class ClienteController {
+	................. Codigo
+	@PostMapping("/form")		//Guardamos en la bd
+	public String guardar(Cliente cliente, SessionStatus status) {	//Recibe el objeto cliente que viene con los datos poblados y lo guarda
+		clienteDao.save(cliente);
+		status.setComplete();		//Eliminamos el objeto guardado en la sesion al editar o crear
+		return("redirect:listar");
+	}
+	//Fin Crear
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------------------- Agregando Eliminar ------------------------------------------------------------------------
+1º Añadimos el metodo en la Interfaz IClienteDao -> public void delete(Long id);
+
+2º Añadimos el metodo en el ClienteDaoImpl:
+	@Override
+	@Transactional
+	public void delete(Long id) {		//Eliminar, obtenemos el cliente por el id y lo eliminamos.
+		Cliente cliente = findOne(id);
+		em.remove(cliente);
+	}
+3º Añadimos el metodo para eliminar en el controlador:
+	@RequestMapping(value="/eliminar/{id}")					//Eliminar
+	public String eliminar(@PathVariable(value="id") Long id) {
+		
+		if(id > 0) {	
+			clienteDao.delete(id);
+		}
+		
+		return "redirect:/listar";	//Lo elimina y retorna a la vista
+	}
+
+4º Añadimos el enlace a la vista, con el evento para confirmar el eliminar:
+	<td><a th:href="@{/eliminar/} + ${cliente.id}" th:text="'Eliminar'" onclick="return confirm('Estás seguro que quieres eliminar?');" class="btn btn-danger btn-xs"></a></td>
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------- Agregar la capa Service ------------------------------------------------------------------------------------------
+//Una clase Service, no es más que una clase que presta servicio de lógica de negocio al controlador, el 99% de las veces son clases que contienen como atributos los objetos DAOs para realizar consultas y operaciones con JPA.
+//Lo que hace es, realizar operaciones y select a la base de datos, usando los objetos dao.
+//Esto permite centralizar en una única clase o fachada varios Dao que pueden trabajar en conjunto bajo la misma transacción  realizando varias consultas u operaciones de diferentes DAO en un solo método del service o de forma independiente. Así evitamos ensuciar el controlador con múltiples accesos a DAO.
+//Más que nada es un patron de diseño que desacopla el Dao del controlador y lo deja en una clase más especializada, pero es opcional, igual puedes usar los Daos directamente en el controlador, pero si estás trabajando con muchos Dao puede tornarse un poco desordenado.
+
+
+1º Creamos el package service y dentro la interfaz IClienteService y la clase ClienteServiceImpl.
+
+2º La idea es que por cada metodo en la clase dao vamos a tener metodos en la clase service:
+
+	public interface IClienteService {
+	
+		public List<Cliente> findAll();
+	
+		public void save(Cliente cliente);
+	
+		public Cliente findOne(Long id);
+	
+		public void delete(Long id);
+	}
+
+3º Implementamos los metodos en la clase ClienteServiceImpl, inyectando el cliente DAO. Con estos metodos usaremos los metodos del cliente DAO, es como una fachada, sirve para desacoplar el Dao  del controlador como patron de diseño.
+	@Service
+	public class ClienteServiceImpl implements IClienteService {
+	
+		@Autowired
+		private IClienteDao clienteDao;
+
+		@Override
+		public List<Cliente> findAll() {
+			return clienteDao.findAll();
+		}
+
+		@Override
+		public void save(Cliente cliente) {
+			clienteDao.save(cliente);
+		}
+
+		@Override
+		public Cliente findOne(Long id) {
+			return clienteDao.findOne(id);
+		}
+
+		@Override
+		public void delete(Long id) {
+			clienteDao.delete(id);
+		}
+
+	}
+
+4º Gracias a manejarlo desde la clase service, podemos quitar las anotaciones @Transactional en el Dao, moviendo todos los transaccionals a la clase service en su correspondiente metodo.
+//Dentro de un metodo de la clase service podemos interactuar con diferentes Dao dentro de la misma transaccion, esa es la idea de esto.
+
+5º Cambiamos la inyeccion del controlador del IClienteDao al IClienteService -> private IClienteService clienteService;
+
+//Este patro de diseño se llama Facade, es una practica recomendada en vez de implementar los Dao de forma directa en el controlador.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------ Implementando el Dao con la interface CrudRepository ---------------------------------------------------------------------
+//Con esto podemos implementar nuestro componente de acceso a datos Dao con la interfaz CrudRepository, la cual es propia del Api de Spring Data Jpa.
+
+//Documentacion: https://spring.io/projects/spring-data
+https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#repositories
+
+Los metodos para utilizar van construidos por debajo de la interfaz.
+
+//Esto es como lo hice anteriormente, pero de forma automatica.
+
+//Puede heredad de CrudRepository o de JpaRepository, la diferencia es que Jpa incluye otros metodos, por ejemplo para paginacion, ordenamiento...
+
+//Las consultas personalizadas hay que tener cuidado porque son a nivel de objeto no a nivel de tablas, por lo tanto no vale la sintaxis sql.
+
+//Tambien se pueden usar nombres de metodos para las query pero con ciertas reglas, por ejemplo findBy'Atributo'And|Or'Atributo', pongo una comparacion a continuacion:
+	List<User> findByEmailAddressAndLastname(String emailAddress, String lastname = select u from User u where u.emailAddress = ?1 and u.lastname = ?2
+
+***********************************************************
+**	Modificar el proyecto con un ejemplo de esto     **
+***********************************************************
+1º Eliminamos Cliente DaoImpl porque la idea es modificar la interfaz Dao y limpiamos los metodos de nuestra interfaz Dao.
+
+2º Convertimos nuestra interfaz  ICLienteDao.java en el crudRepository:
+	public interface IClienteDao extends CrudRepository<Cliente, Long>{
+		//Como primer parametro el tipo de dato de nuestra clase Entity y como segundo parametro el tipo de la key (id)
+		//No hace falta anotarla como @Repository para inyectarla debido a que es una interfaz especial, que hereda de CrudRepository, por debajo ya es un componente Spring, no es necesario indicarlo con anotaciones
+	}
+
+3º Ahora tenemos que modificar el ClienteServiceImpl para que use los metodos de el repository:
+	@Service
+	public class ClienteServiceImpl implements IClienteService {
+
+		@Autowired
+		private IClienteDao clienteDao;
+
+		@Override
+		@Transactional(readOnly = true)
+		public List<Cliente> findAll() {
+			return (List<Cliente>) clienteDao.findAll();
+		}
+
+		@Override
+		@Transactional
+		public void save(Cliente cliente) {
+			clienteDao.save(cliente);
+		}
+
+		@Override
+		@Transactional(readOnly = true)
+		public Cliente findOne(Long id) {
+			return clienteDao.findById(id).orElse(null);
+		}
+
+		@Override
+		@Transactional
+		public void delete(Long id) {
+			clienteDao.deleteById(id);
+		}
+
+	}
+//Es una forma mucho más simple y más facil de trabajar con Jpa.
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------- Cambiando H2(Datasource) a Mysql---------------------------------------------------------------------------------------------
+*****************************************
+**   Conexion application.properties   **
+*****************************************
+spring.datasource.url=jdbc:mysql://localhost/db_springboot
+spring.datasource.username=root
+spring.datasource.password=Chun1ni995.
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.jpa.database-platform=org.hibernate.dialect.MySQL8Dialect
+
+//Podemos añadir la siguiente linea para hacer pruebas, a efecto de probar y desarrollar y crear las tablas a traves de los @entity y cuando paramos la aplicacion las elimina por completo e importa lo del import.sql que tengamos:
+spring.jpa.hibernate.ddl-auto=create-drop
+
+//Linea para que nos muestre las consultas nativas que genera jpa por debajo:
+logging.level.org.hibernate.SQL=debug
+
+//Si nos da error de servertimezone modificamos la primera linea -> spring.datasource.url=jdbc:mysql://localhost/db_springboot?serverTimezone=Europe/Madrid&UseSSL=false
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------ Mensaje despues de guardar, eliminar o lo que sea, Flash Messenger ------------------------------------------------
+1º Añadimos RedirecAttributes flash en el metodo del controlador que queramos:
+	@PostMapping("/form")		//Guardamos en la bd
+	public String guardar(Cliente cliente, SessionStatus status, RedirectAttributes flash) {
+		flash.addAttribute("success", "Cliente Creado con exito!");
+
+2º En el html lo manejamos segun el mensaje.
+	
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------- Paginacion para BBDD Jpa-------------------------------------------------------------------------------
+//Es importante cuando la cantidad de registros es importante, mejoramos el rendimiento ya que no traemos todos los registros a la vez.
+
+1º En el repository tenemos que extender de PagingAndSortingRepository:
+	public interface IClienteDao extends PagingAndSortingRepository<Cliente, Long>{}
+
+2º En el IClienteService, añadimos un nuevo metodo, Pageable lo importamos del springframework...domain:
+	public Page<Cliente> findAll(Pageable pageable);		//Retorna un page que es un iterable
+
+3º En el ClienteService importamos el metodo y lo modificamos:
+	@Override
+	public Page<Cliente> findAll(Pageable pageable) {
+		return clienteDao.findAll(pageable);
+	}
+
+4º En el controlador implementamos la paginacion, antes estabamos recibiendo todos los registros, ahora con esto no:
+	4aº Obtenemos la pagina actual mediante la ruta url con @RequestParam()
+		@GetMapping("/listar")					//Pasamos el listado de clientes a la vista
+		public String listar(@RequestParam(name="page", defaultValue="0") int page, Model model) {
+		
+			Pageable pageRequest = PageRequest.of(page, 5);		//Mostramos 4 registros por pagina, se pueden colocar los que quieras
+		
+			Page<Cliente> clientesPaginacion = clienteService.findAll(pageRequest);		//Invocamos el listar todo pero paginable del service
+		
+			PageRender<Cliente> pageRender = new PageRender<>("/listar", clientesPaginacion);
+			model.addAttribute("titulo", "Listado de clientes");
+			model.addAttribute("clientes", clientesPaginacion);			//Pasamos el cliente paginado
+			model.addAttribute("page", pageRender);
+			return "listar";
+		}
+
+5º Hay que crear una clase que calcule desde donde hasta donde y a medida que vamos avanzando va corriendo hata los ultimos registros, o retrocediendo, creamos el package com.bolsadeideas.springboot.app.paginator y la clase PageRender, para calcular como se gestionan los registros por pagina y mostrarlos todos:
+public class PageRender<T> {
+	private String url;
+	private Page<T> page;
+
+	private int totalPaginas;
+
+	private int numElementosPorPagina;
+
+	private int paginaActual;
+
+	private List<PageItem> paginas;
+	
+	public PageRender(String url, Page<T> page) {
+		this.url = url;
+		this.page = page;
+		this.paginas = new ArrayList<PageItem>();
+
+		numElementosPorPagina = page.getSize();
+		totalPaginas = page.getTotalPages();
+		paginaActual = page.getNumber() + 1;
+
+		int desde, hasta;
+		if (totalPaginas <= numElementosPorPagina) {
+			desde = 1;
+			hasta = totalPaginas;
+		} else {
+			if (paginaActual <= numElementosPorPagina / 2) {
+				desde = 1;
+				hasta = numElementosPorPagina;
+			} else if (paginaActual >= totalPaginas - numElementosPorPagina / 2) {
+				desde = totalPaginas - numElementosPorPagina + 1;
+				hasta = numElementosPorPagina;
+			} else {
+				desde = paginaActual - numElementosPorPagina / 2;
+				hasta = numElementosPorPagina;
+			}
+		}
+		for(int i=0 ; i < hasta; i++) {
+			paginas.add(new PageItem(desde + i, paginaActual == desde + i));
+		}
+	}
+
+	public String getUrl() {
+		return url;
+	}
+
+	public int getTotalPaginas() {
+		return totalPaginas;
+	}
+	public int getPaginaActual() {
+		return paginaActual;
+	}
+
+	public List<PageItem> getPaginas() {
+		return paginas;
+	}
+	
+	public boolean isFirst() {
+		return page.isFirst();
+	}
+	
+	public boolean isLast() {
+		return page.isLast();
+	}
+	
+	public boolean isHasNext() {
+		return page.hasNext();
+	}
+	
+	public boolean isHasPrevious() {
+		return page.hasPrevious();
+	}
+}
+
+6º  Faltaria crear una clase para representar cada una de las paginas, tendra el numero de pagina e indicara si es el numero actual. Creamos la clase PageItem:
+	public class PageItem {
+	private int numero;
+	private boolean actual;
+	
+	public PageItem(int numero, boolean actual) {	
+		this.numero = numero;
+		this.actual = actual;
+	}
+
+	public int getNumero() {
+		return numero;
+	}
+
+	public boolean isActual() {
+		return actual;
+	}
+	
+}
+
+7º Crear la el fragmento html del paginador:
+	<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+	<nav th:fragment="paginator">
+
+		<ul class="pagination">
+			<li class="page-item"
+				th:class="${page.first? 'page-item disabled': 'page-item'}"><span
+				class="page-link" th:if="${page.first}">Primera</span> <a
+				class="page-link" th:if="${not page.first}"
+				th:href="@{${page.url}(page=0)}">Primera</a></li>
+
+
+			<li class="page-item"
+				th:class="${not page.hasPrevious? 'page-item disabled': 'page-item'}">
+				<span class="page-link" th:if="${not page.hasPrevious}">&laquo;</span>
+				<a class="page-link" th:if="${page.hasPrevious}"
+				th:href="@{${page.url}(page=${page.paginaActual-2})}">&laquo;</a>
+			</li>
+
+			<li class="page-item" th:each="item : ${page.paginas}"
+				th:class="${item.actual? 'page-item active': 'page-item'}"><span
+				class="page-link" th:if="${item.actual}" th:text="${item.numero}"></span>
+				<a class="page-link" th:if="${not item.actual}"
+				th:href="@{${page.url}(page=${item.numero-1})}"
+				th:text="${item.numero}"></a></li>
+
+
+			<li class="page-item"
+				th:class="${not page.hasNext? 'page-item disabled': 'page-item'}">
+				<span class="page-link" th:if="${not page.hasNext}">&raquo;</span> <a
+				class="page-link" th:if="${page.hasNext}"
+				th:href="@{${page.url}(page=${page.paginaActual})}">&raquo;</a>
+			</li>
+
+			<li class="page-item"
+				th:class="${page.last? 'page-item disabled': 'page-item'}"><span
+				class="page-link" th:if="${page.last}">&Uacute;ltima</span> <a
+				class="page-link" th:if="${not page.last}"
+				th:href="@{${page.url}(page=${page.totalPaginas-1})}">&Uacute;ltima</a>
+			</li>
+		</ul>
+
+	</nav>
+
+</body>
+</html>	
+------------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -668,10 +668,29 @@ en la a  Guzmán-> Guzm&aacute;n
 -------------------------------------------------------------------------------------------------------------------------------------------------
 
 -------------------------------------------------Contexto (Scote) de los componentes-------------------------------------------------------------------
-//Por defecto usamos una sola instancia de cada componente, (singleton), peor podmeos cambiarlo.
-1º Cambiar factura de tipo singleton a request, por ejemplo, esto sirve para que la factura solo dure lo que dura la peticion http y no toda la sesion del navegador, muy util:
+//Por defecto usamos una sola instancia de cada componente, (singleton), pero podemos cambiarlo. 
+1º Cambiar factura de tipo singleton a request, por ejemplo, esto sirve para que la factura solo dure lo que dura la peticion http y no toda la sesion del navegador, muy util, con esto cada factura es propia y de esta manera cada cliente tiene la suya, por ejemplo:
 @Component
 @RequestScope
 public class Factura {
-2º
+
+****************
+@SessionScope
+****************
+//SesionScope, para trabajar con sesiones y de esta manera dure toda la sesion del navegador o hasta que haya un timeout, para un carro de compra o autenticacion de usuario por ejemplo:
+//Se almacena como objeto de java, y por eso necesita serializable porque convierte el objeto en una secuencia de bytes para poderse guardar y transportar en la session, en http,json, orm... y luego se va a restaurar con ese objeto y es un clon perfecto del original
+1º @SessionScope y necesita ser una clase Serializable.
+@SessionScope
+public class Factura implements Serializable{
+
+2º Al ser serializable nos pide generar un Serial version ID, para ello con el raton encima de la clase que saldra en amarillo, add serial version y listo, generara algo asi:
+private static final long serialVersionUID = -6616196124543799229L;
+//El @PreDestroy no se aplica en SessionScope.
+
+//ApplicationScope
+
+**********************
+@ApplicationScope
+**********************
+//Muy parecido al singleton, pero este se guarda en el contexto serlet.
 -------------------------------------------------------------------------------------------------------------------------------------------------------

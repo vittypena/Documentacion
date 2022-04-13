@@ -1,0 +1,768 @@
+------------------------------FORM--------------------------------------
+//Se mapea un formulario a una clase de tal manera que cuando escribamos en los campos el controlador recibe los datos. 
+//Asi puebla la clase entity/POJO.
+
+1º Creamos la clase controladora:
+@Controller
+public class FormController {
+	
+	@GetMapping("/form")
+	public String form(Model model) {
+		return "form";
+	}
+	
+	@PostMapping("/form")
+	public String procesar(Model model) {
+		return "resultado";
+	}
+}
+
+//El metodo handler get es para mostrar los datos en pantalla y el gandler post para procesar al escribir o completar el formulario y los envia por http post.
+
+2º Hay que agregar una dependencia si no esta, para la validacion del formulario, en mi caso la tengo pero si no en el pom.xml boton derecho spring, add starter y en IO, la de validation.
+
+3º Añadimos la vista del formulario:
+<body>
+
+	<!-- Con esto enviamos los datos a /form -->
+	<form th:action="@{/form}" method="post">
+		<!-- div sirve para poder darle estilo luego a parte -->
+		<div>
+			<!-- Con for en html de esta manera mapeamos el id y si hacemos clic en el label Username nos posicionamos en el input text -->
+			<label for="username">Username</label>
+			<div>
+			<!-- El parametro name en los input que vayamos a enviar datos y el id lo del for -->
+				<input type="text" name="username" id="username">				
+			</div>			
+		</div>
+		
+		<div>
+			<label for="password">Password</label>
+			<div>
+				<input type="password" name="password" id="password">
+			</div>
+		</div>
+		
+		<div>
+			<label for="email">Email</label>
+			<div>
+				<input type="email" name="email" id="email">
+			</div>
+		</div>
+		
+		<div>
+			<div>
+				<input type="submit" value="Enviar">
+			</div>
+		</div>
+	</form>
+
+</body>
+//La vista el form tiene que tener un target mediante el action a la cual sea la ruta a la que envieemos el formulario.
+
+4º Capturamos en el controlador los parametros del post del form, segun su name="", mediante un @RequestParam, para ello tocamos el metodo @PostMapping del controller:
+	@PostMapping("/form")
+	public String procesar(Model model,
+			@RequestParam(name="username") String username,
+			@RequestParam String password,
+			@RequestParam String email) {
+		//el name="username" se puede omitir
+		
+		//Le pasamos un titulo por ejemplo tb a resultado
+		model.addAttribute("titulo", "Resultado form");
+		
+		//Les pasamos las variables que recogemos en el @RequestParam
+		model.addAttribute("username", username);
+		model.addAttribute("password", password);
+		model.addAttribute("email", email);
+				
+		return "resultado";
+	}
+
+5º Creamos el html del resultado:
+<body>
+	<h3 th:text="${titulo}"></h3>
+
+	<ul>
+		<li th:text="${username}"></li>
+		<li th:text="${password}"></li>
+		<li th:text="${email}"></li>
+	</ul>
+</body>
+-----------------------------------------------------------------------
+
+------------------------------------------------------Mejorar la clase model del formulario de ejemplo------------------------------------------------------------
+1º Creamos el package models.entity o models.domain segun nomenclatura
+2º Creamos la clase usuario con los mismos parametros que los nombres de campo del form:
+public class Usuario {
+	private String username;
+	private String password;
+	private String email;
+//Getters and setters tb
+
+3º Creamos una instancia en el FormController:
+Usuario usuario = new Usuario(); //En el PostMapping
+//Se podria inyectar pero siendo una clase POJO, entity y no tiene sentido inyectar un objeto Entity/Pojo ya que representan los datos de nuestra app guardados en BBDD, por lo tanto no es una clase de servicio, de configuracion, helper que preste alguna clase de servicio o algo. Por eso no es necesario. 
+//La inyeccion suele hacerse en los service, repository, los objetos DAO que realizan consultas o que realicen operaciones.
+//Ejemplo:
+	@PostMapping("/form")
+	public String procesar(Model model,
+			@RequestParam(name="username") String username,
+			@RequestParam String password,
+			@RequestParam String email) {
+		
+		//Instancia
+		Usuario usuario = new Usuario();
+		usuario.setUsername(username);
+		usuario.setEmail(email);
+		usuario.setPassword(password);						
+		
+		//Les pasamos las variables que recogemos en el @RequestParam, que hemos metido en el objeto usuario
+		model.addAttribute("usuario", usuario);
+		
+		//Le pasamos un titulo por ejemplo tb a resultado
+		model.addAttribute("titulo", "Resultado form");
+				
+		return "resultado";
+	}
+
+//Mejoramos más.Podemos incluir los datos en el mapeo incluyendo el usuario por argumento por el model, poblandose automaticamente los atributos con los campos del /form, este es equivalente al de arriba:
+	@PostMapping("/form")
+	public String procesar(Usuario usuario, Model model) {						
+		model.addAttribute("usuario", usuario);
+		model.addAttribute("titulo", "Resultado form");	
+		return "resultado";
+	}
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------Validacion del formulario de forma manual--------------------------------------------------------------------------
+//Si no tenemos la dependencia de validation la agregamos en el .pom:
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+
+//Esto sirve para validar que los datos del formulario sean correctos a la clase POJO que esta mapeado.
+1º Ponemos en el @PostMapping el @Valid, la cual es una validacion tipica, tambien podemos hacerlas personalizadas.
+	@PostMapping("/form")
+	public String procesar(@Valid Usuario usuario, Model model) {	
+
+2º En la clase Usuario o la POJO que sea debemos indicar que vamos a validar.
+	@NotEmpty
+	private String username;
+3º Antes de pasar los datos mediante el Post debemos validar si el formulario es valido, asi que en el controler ponemos el BindingResult el cual contiene los errores al validar, debe de estar despùes del usuario:
+	@PostMapping("/form")
+	public String procesar(@Valid Usuario usuario, BindingResult result, Model model) {	
+		model.addAttribute("titulo", "Resultado form");	
+		
+		//Con el if comprobamos si en el result de BindingResult hay errores y de haberlos retornamos al formulario de nuevo.
+		if(result.hasErrors()) {
+			return "form";
+		}
+		
+		model.addAttribute("usuario", usuario);		
+		return "resultado";
+	}
+4º Pasamos el mensaje de error a la vista para ello en el mismo metodo, en esto estamos haciendo un map con los errores y luego recorriendolos con result.getFieldsErrors y los metemos en el map por cada uno de ellos y luego pasamos eso a la vista:
+		if(result.hasErrors()) {
+			Map<String, String> errores = new HashMap<>();
+			result.getFieldErrors().forEach(err ->{
+				errores.put(err.getField(), "El campo ".concat(err.getField()).concat(" ").concat(err.getDefaultMessage()));
+			});
+			model.addAttribute("error", errores);
+			return "form";
+		}
+
+5º Añadimos los mensajes de error en la vista del formulario:
+		<div>
+			<label for="email">Email</label>
+			<div>
+				<input type="text" name="email" id="email">
+			</div>
+			<div th:if="${error!=null && error.containsKey('email')}" th:text="${error.email}"></div>	
+		</div>
+
+6º Evitar que limpie los valores que si son correctos al haber un error, para ello añadimos un th:value a los input con el objeto usuario que estamos pasando y asi con todos los input text:
+<input type="text" name="email" id="email" th:value="${usuario.email}">
+
+7º Al hacer esto, si cargamos la primera vez el form, dara error al intentar poner el usuario que tenia antes por el th:text=..., para evitar esto le pasamos un usuario vacio en el @GetMapping para si intenta ponerlo en el html por si hubiese errores que exista el usuario aunque sea vacio:
+	@GetMapping("/form")
+	public String form(Model model) {
+		Usuario usuario = new Usuario();
+		model.addAttribute("titulo","Formulario usuarios");
+		model.addAttribute("usuario", usuario);
+		return "form";
+	}
+
+//Estas validaciones se pueden hacer de manera automatizada, esto era una base de forma manual.
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------- Validacion del formulario de forma automatica --------------------------------------------------------------------------
+*******************************
+ Mejoras respecto al anterior
+*******************************
+//Podemos mapear el form al objeto que pasemos y asi no lo tenemos que pasar en cada input y de esta manera podemos acceder al parametro del objeto de golpe
+<form th:action="@{/form}" th:object="${usuario}" method="post">
+
+//Por cada input podemos quitar el name y el th:value cambiarlo por th:field (esto es para mapear el form a la clase POJO), es una combinacion del name y el th:value, por lo tanto menos codigo:
+<input type="text" id="username" th:field="*{username}">
+
+//Para manejar errores de forma automatica:
+1º Quitamos el contenido del if del has error del controler
+	@PostMapping("/form")
+	public String procesar(@Valid Usuario usuario, BindingResult result, Model model) {
+		model.addAttribute("titulo", "Resultado form");
+
+		if (result.hasErrors()) {
+			return "form";
+		}
+
+		model.addAttribute("usuario", usuario);
+		return "resultado";
+	}
+
+2º Cambiamos en el form.html ->  <div th:if="${error!=null && error.containsKey('password')}" th:text="${error.password}"></div> -> por:
+	<div th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------ Agregar datos por defecto a formulario--------------------------------------------------------------------------------------
+//Los ponemos con set para que esten por defecto:
+	@GetMapping("/form")
+	public String form(Model model) {
+		Usuario usuario = new Usuario();
+		usuario.setNombre("Jhon");
+		usuario.setApellido("Doe");
+		model.addAttribute("titulo", "Formulario usuarios");
+		model.addAttribute("usuario", usuario);
+		return "form";
+	}
+
+//Para enviar información que no esta mapeada en el formulario, que no esta en el formulario, pero si que esta entre bambalinas por detras.
+//Al no salir en el formulario la informacion se pierde, pero con @SessionAttributes mantenemos los datos durante el ciclo form.
+
+*************************************************************
+@SessionAttributes
+*************************************************************
+//Sirve para mantener los datos entre formularios que no salen en el formulario anterior pero si que estan, como por ejemplo en una base de datos, los datos que si se envian pero el usuario no los ve y claro lo envia en null porque sin esto lo que se envia son los datos del formulario.
+1º Ponemos el @SessionAttributes como decorador del controller del form y con el nombre del attributo que queremos guardar, de esta manera se guarda en una sesion http:
+	@Controller
+	@SessionAttributes("usuario")
+	public class FormController {
+
+2º Despues de guardar en la bd o donde sea tenemos que limpiar esto a traves de un objeto para ello en el @PostMapping añadimos el Session status y el status.setComplete:
+	@PostMapping("/form")
+	public String procesar(@Valid Usuario usuario, BindingResult result, Model model, SessionStatus status) {
+		model.addAttribute("titulo", "Resultado form");
+
+		if (result.hasErrors()) {
+			return "form";
+		}
+
+		model.addAttribute("usuario", usuario);
+		status.setComplete();
+		return "resultado";
+	}
+//Esto lo que hace es completar el proceso y eliminar el objeto usuario de la sesion para no ocupar memoria, ya que lo estabamos guardando en la sesion para poder tener los datos que no se veian en el form.
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------Mas de validacion, @Size, @Email--------------------------------------------------------------------------------------
+1º @Email, para que sea un email, si no hemos puesto el tipo input"email":
+	@NotEmpty
+	@Email
+	private String email;
+
+2º Validar tamaño de un string:
+	@NotEmpty
+	@Size(min = 3, max=8)
+	private String username;
+
+***********************************************
+Personalizar mensaje error cuando falla
+editar mensaje validar
+editar mensaje error
+***********************************************
+//Lo hacemos mediante message en el decorador de validar:
+	@NotEmpty(message ="El nombre no puede ser vacio")
+	private String nombre;
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------- Mensajes de errores personalizados de validacion usando properties ----------------------------------------------------------------
+editar mensaje error
+1º Creamos el message.properties, new file en resources.
+
+//Podemos desacoplarlo del codigo
+2º Contenido del message.properties, en el ejemplo ponemos a @NotEmpty de forma global el mensaje:
+	NotEmpty =el campo es requerido
+	NotEmpty.usuario.nombre =el campo nombre es requerido
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------Expresiones regulares @Pattern---------------------------------------------------------------------------------------------------------
+//Validar datos mediante expresion regular, Las expresiones regulares es un lenguaje de programación, hay que aprenderlo aparte:
+	@Pattern(regexp = "[0-9]{2}[.][\\d]{3}[.][\\d]{3}[-][A-Z]{1}")		//2 caracteres del 0 al nueve, ., 3 digitos, ., 3 digitos, _ y una letra
+	private String identificador;	
+	
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------- Validar mediante clase errores-----------------------------------------------------------------------------------
+1º Creamos paquete validation en .app.
+
+2º Creamos la clase UsuarioValidador y antes de darle a aceptar, añadimos una interfaz filtrando por validator pero solo el de springframework:
+
+3º Configuramos el ejemplo para que valide la clase Usuario, el nombre vacio y esas cosas:
+	package com.bolsadeideas.springboot.form.app.validation;
+
+	import org.springframework.stereotype.Component;
+	import org.springframework.validation.Errors;
+	import org.springframework.validation.ValidationUtils;
+	import org.springframework.validation.Validator;
+
+	import com.bolsadeideas.springboot.form.app.models.domain.Usuario;
+
+	@Component
+	public class UsuarioValidador implements Validator {
+
+		@Override
+		public boolean supports(Class<?> clazz) {
+			return Usuario.class.isAssignableFrom(clazz);
+		}
+
+		@Override
+		public void validate(Object target, Errors errors) {
+			Usuario usuario = (Usuario) target;
+
+			// Validar nombre vacio
+			ValidationUtils.rejectIfEmpty(errors, "nombre", "El campo nombre no puede ser vacio");
+
+			// Validar expresion regexp
+			if (usuario.getIdentificador().matches("[0-9]{2}[.][\\d]{3}[.][\\d]{3}[-][A-Z]{1}") == false) {
+				errors.rejectValue("identificador", "Formato de la expresion regular incorrecto");
+			}
+		}
+
+	}
+
+4º Inyectamos la clase validadora en el controlador del formulario:
+	public class FormController {
+
+	@Autowired
+	private UsuarioValidador validador;
+
+5º Lo incluimos en el post del controlador del formulario para que lo aplique pasandole el usuario a validar y el bindingresult para los errores:
+	@PostMapping("/form")
+	public String procesar(@Valid Usuario usuario, BindingResult result, Model model, SessionStatus status) {
+		validador.validate(usuario, result);
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------@InitBinder----------------------------------------------------------------------------------------
+//Es una alternativa, esta desacopla el validador, se puede usar esta o la anterior, prefiero la anterior.
+@InitBinder
+	public void initBinder(WebDataBinder binder) {
+		binder.addValidators(validador);
+	}
+//Podemos quitar validador.validate(usuario, result); del ejercicio anterior
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------- Validacion personalizada utilizando anotaciones-------------------------------------------------------//Esto mola, video 65.
+//Sirve para crear un @error personalizado, para ello pongo uno de ejemplo:
+1º IdentificadorRegex.java, es la anotacion:
+	package com.bolsadeideas.springboot.form.app.validation;
+
+	import static java.lang.annotation.ElementType.FIELD;
+	import static java.lang.annotation.ElementType.METHOD;
+	import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+	import java.lang.annotation.Retention;
+	import java.lang.annotation.Target;
+
+	import javax.validation.Constraint;
+	import javax.validation.Payload;
+
+	@Constraint(validatedBy = IdentificadorRegexValidador.class)
+	@Retention(RUNTIME)
+	@Target({ FIELD, METHOD })
+	public @interface IdentificadorRegex {
+		String message() default "Identificador invalido";
+
+		Class<?>[] groups() default { };
+
+		Class<? extends Payload>[] payload() default { };
+	}
+
+2º IndentificadorRegexValidador.java:
+	package com.bolsadeideas.springboot.form.app.validation;
+
+	import javax.validation.ConstraintValidator;
+	import javax.validation.ConstraintValidatorContext;
+	//lo que viene despues de la interfaz es <NombreClaseAnotacion, Tipo de dato a validar>
+	public class IdentificadorRegexValidador implements ConstraintValidator<IdentificadorRegex, String> {
+
+		@Override
+		public boolean isValid(String value, ConstraintValidatorContext context) {
+			if (value.matches("[0-9]{2}[.][\\d]{3}[.][\\d]{3}[-][A-Z]{1}")) {
+				return true;
+			}
+			return false;
+		}
+
+	}
+3º Usarlo:
+	@IdentificadorRegex()
+	private String identificador;
+
+//Resumen, creamos la anotacion, new annotacion marcamos add@target, add @retention , runtime, field, method, creamos la clase añadiendole la interfaz ConstraintValidator con los errores y lo ponemos en donde queramos usarlo.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------- Validar numero -----------------------------------------------------
+//La clase Integer se trata como un objeto clase, entonces podemos usar NotNull, si tenemos int, podemos usar @Min(1) de un digito minimo
+	@NotNull
+	@Min(5)
+	@Max(8)
+	private Integer cuenta;
+
+//Para evitar strings
+O en el .properties -> typeMismatch.java.lang.Integer=Debe ser un entero, pero eso no me funciona
+
+//Por suerte lo ideal es poner el input de tipo number y obviar validar por enteros
+----------------------------------------------------------------------------------------------------------------
+
+------------------------------------------- Validar fecha ------------------------------------------------------
+//La importamos de java util en el POJO.
+
+//Lo mismo de antes typeMismatch.java.util.Date=Debe ser una fecha con formato yyyy/MM/dd -> en el .properties
+
+//Podemos darle un formato:
+	@NotNull
+	@DateTimeFormat(pattern = "yyyy/MM/dd")
+	private Date fechaNacimiento;
+
+***********************************************
+*    Podemos poner el input de tipo date.     *
+***********************************************
+//De esta manera los navegadores estandar pondran un datepicker
+1º <input type="date" id="fechaNacimiento" th:field="*{fechaNacimiento}" placeholder="yyyy-MM-dd">
+2º Debemos darle DateTimeFormat con - porque el date lo envia por defecto por debajo con -.
+3º Validar que la fecha sea pasada a la actual con @Past, futuro es con @Future.
+4º Cambiar el mensaje de error en el properties -> Future.usuario.fechaNacimiento=debe ser una fecha en pasado 	(TENGO QUE ARREGLAR LOS PROPERTIES), creo que se puede hacer en el .yaml
+5º Revisar otra forma, video 69 y 70 con @InitBinder, a mi no me gusta.
+----------------------------------------------------------------------------------------------------------------
+
+----------------------------------------- Formatear con @InitBinder --------------------------------------------------
+//Es un custom editor
+----------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------- Filtro para convertir a mayuscula----------------------------------------
+Video 71.
+-------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------- Lista Despegable --------------------------------------------------------
+1º En el html:
+	<div>
+		<label for="pais">Pais</label>
+		<div>
+			<select id="pais" th:field="*{pais}"> 
+				<option value="">--seleccionar--</option>
+				<option th:each="pais: ${paises}" th:text="${pais}" th:value="${pais}"></option>
+			</select>
+		</div>
+		<div th:if="${#fields.hasErrors('pais')}" th:errors="*{pais}"></div>
+	</div>
+
+2º En el controller:
+	@ModelAttribute("paises")
+	public List<String> paises(){
+		return Arrays.asList("España", "Mexico", "Chile", "Argentina", "Peru", "Colombia", "Venezuela");
+	}
+3º En la clase, con getter and setters:
+	@NotEmpty
+	private String pais;
+
+4º Mostrarlo en resultado
+
+//Para marcar por defecto una opcion:
+1ºañadimos en el getter del controller la que queremos por defecto:
+	usuario.setPais(new Pais(1,"ES","España"));
+2º Generamos el metodo toString de la siguiente manera en la clase pais para que pueda comprar los objetos:
+	@Override
+	public String toString() {
+		return this.id.toString();
+	}
+-------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------ Dar formato a la fecha en la vista de la plantilla --------------------------------------------------------
+//En el html, le damos el formato que queramos entre las '':
+<li th:text="${#dates.format(usuario.fechaNacimiento, 'dd/MM/yyyy')}"></li>
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------ Llenar lista con map --------------------------------------------------------------------------------
+1º En el controlador:
+	@ModelAttribute("paisesMap")
+	public Map<String, String> paisesMap(){
+		Map<String, String> paises = new HashMap<String, String>();
+		paises.put("ES", "España");
+		paises.put("MX", "Mexico");
+		paises.put("CH", "Chile");
+		paises.put("AR", "Argentina");
+		paises.put("PE", "Peru");
+		paises.put("CO", "Colombia");
+		paises.put("VE", "Venezuela");
+		return paises;
+	}
+
+2º En el form.html:
+	<div>
+		<label for="pais">Pais</label>
+		<div>
+			<select id="pais" th:field="*{pais}"> 
+				<option value="">--seleccionar--</option>
+				<option th:each="pais: ${paisesMap.entrySet()}" th:text="${pais.value}" th:value="${pais.key}"></option>
+			</select>
+		</div>
+		<div th:if="${#fields.hasErrors('pais')}" th:errors="*{pais}"></div>
+	</div>
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------- Llenar lista con Clase ---------------------------------------------------------------------
+1º Cleamos la clase Pais con codigo, siglas y nombre pais.
+
+2º Añadimos el metodo en el controlador para repoblarla:
+	@ModelAttribute("listaPaises")
+	public List<Pais> listaPaises(){
+		return Arrays.asList(
+				new Pais(1,"ES","España"), 
+				new Pais(2,"ME","Mexico"), 
+				new Pais(3,"CH","Chile"), 
+				new Pais(4,"AR","Argentina"), 
+				new Pais(5,"PE","Peru"), 
+				new Pais(6,"CO","Colombia"), 
+				new Pais(7,"VE","Venezuela")
+				);
+	}
+3º Poblamos el formulario con esta lista:
+	<div>
+		<label for="pais">Pais</label>
+		<div>
+			<select id="pais" th:field="*{pais.id}"> 
+				<option value="">--seleccionar--</option>
+				<option th:each="pais: ${listaPaises}" th:text="${pais.nombre}" th:value="${pais.id}"></option>
+			</select>
+		</div>
+			<div th:if="${#fields.hasErrors('pais.id')}" th:errors="*{pais.id}"></div>
+		</div>
+4º Ahora validamos que se envia el id pais:
+//En la clase Usuario:
+	@Valid
+	private Pais pais;
+//Y en la clase pais tb:
+	@NotNull
+	private Integer id;
+
+--------------------
+Enviar el objeto entero y no solo el id
+--------------------
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------- Implementando checkboxex html --------------------------------------------------------------
+//En el html form:
+		<div>
+			<label>Roles</label>
+			<div th:each="role: ${listaRolesString}">					//Esto es la lista que estamos iterando
+				<input type="checkbox" th:field="*{roles}" th:value="${role}"> 		//Esto es lo que se envia
+				<label th:text="${role}"></label>					//Esto es lo que se muestra
+			</div>
+			<div th:if="${#fields.hasErrors('roles')}" th:errors="*{roles}"></div>		//Esto es la etiqueta con el error
+		</div>
+//En el html resultado:
+		<ul>
+			<li th:each="role: ${usuario.roles}" th:text="${role}"></li>
+		</ul>
+
+//Hacer que al pinchar en el label marque el checkbox, al generarse los labels automaticamente, debemos usar un helper para indicar el ultimo id generado en el for del mapeo con el label:
+			<div th:each="role: ${listaRolesString}">
+				<input type="checkbox" th:field="*{roles}" th:value="${role}">			//th:value lo necesita por el for each, para indicarle cual es el dato de cada iteracion, th:field es para mapear.
+				<label th:for="${#ids.prev('roles')}" th:text="${role}"></label>		//th:for="${#ids.prev('roles')}
+			</div>
+//De esta forma mapea el for con el id.
+
+******************************
+checkbox true o false
+******************************
+		<div>
+			<label for="habilitar">Habilitar</label>
+			<div>
+				<input type="checkbox" id="habilitar" th:field="*{habilitar}">
+			</div>
+		</div>
+
+//Para marcar por defecto:
+1º En el controller en el getmapping:
+	usuario.setRoles(Arrays.asList(new Role(2, "Usuario", "ROLE USER")));
+2º En el html:
+	<input type="checkbox" th:field="*{roles}" th:value="${role}" th:checked=${#lists.contains(usuario.roles, "role)}">
+3º En la clase implementamos el metodo equals:
+	@Override
+	public boolean equals(Object obj){
+
+		if(this == obj){
+			return true;
+		}
+
+		if(!(obj instanceof Role)){
+			return false;
+		}
+		
+		Role role = (Role)obj;
+		return this.id != null && this.id(role.getId);
+	}	
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------ Implementando radiobutton html ------------------------------------------------------------------
+		<div>
+			<label>Genero</label>
+			<div>
+				<input type="radio" id="genero1" th:field="*{genero}" value="Hombre">
+				<label for="genero1">Hombre</label>
+			</div>
+			<div>
+				<input type="radio" id="genero2" th:field="*{genero}" value="Mujer">
+				<label for="genero2">Mujer</label>
+			</div>
+			<div th:if="${#fields.hasErrors('genero')}" th:errors="*{genero}"></div>
+		</div>
+
+//De forma mas automatizada: 
+1º En el controller:
+	@ModelAttribute("genero")
+	public List<String> genero(){
+		return Arrays.asList("Hombre", "Mujer");
+	}
+2º En el html:
+	<div>
+		<label>Genero</label>
+		<div th:each="gen: ${genero}">
+			<input type="radio" th:field="*{genero}" th:value=${gen}>
+			<label th:for="${#ids.prev('genero')}" th:text="${gen}"></label>
+		</div>
+		<div th:if="${#fields.hasErrors('genero')}" th:errors="*{genero}"></div>
+	</div>		
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-------------------------------------Input type hidden------------------------------------------------------
+//Sirve para incluir valores en el formulario sin mostrarlos, como escondidos. Y este valor se traspasa al controlador, es como el @sessionattributes.
+<input type="hidden" th:field="*{valorSecreto}">
+------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------- Redirect del POST al procesar (al refrescar)--------------------------------------------------------------(IMPORTANTE)
+//Evitar que se reenvie el formulario al actualizar, para que no se guarden los datos en la BBDD.
+//Hay que hacer un redirect a otra pagina, para que no se vuelva a enviar el formulario al ser otro request.
+
+//Para ello tenemos que editar el POST que teniamos y añadir otro GetMapping Con el POST lo refirigimos al GetMapping despues de enviar de forma crrecta y si al actualizar  el usuario es null debido a que el Session lo hemos roto lo devolvemos al form:
+	@PostMapping("/form")
+	public String procesar(@Valid Usuario usuario, BindingResult result, Model model) {
+		
+		//validador.validate(usuario, result);			
+		
+		if (result.hasErrors()) {
+			model.addAttribute("titulo", "Resultado form");
+			return "form";
+		}
+		
+		return "redirect:/ver";
+	}
+	
+	@GetMapping("/ver")
+	public String ver(@SessionAttribute(name="usuario", required = false) Usuario usuario, Model model, SessionStatus status) {
+		
+		if(usuario == null) {
+			return "redirect:/form";
+		}
+		
+		model.addAttribute("titulo", "Resultado form");
+		
+		status.setComplete();
+		return "resultado";
+	}
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------- Estilos CSS Bootstrap ----------------------------------------------------------------------------------
+https://getbootstrap.com/
+//Es un framework, en este caso lo uso para dar estilo al formulario
+//Se puede cargar el css de forma remota o se puede descargar el fichero css y copiarlo en el proyecto.
+
+1º Get starter, para pillarlo de forma remota copiamos el <link rel de CSS> y lo pegamos por ejemplo dentro del form.html debajo del titulo dentro del head:
+<title th:text="${titulo}"></title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+</head>
+
+//Esto nos aplica cambios basicos ya en el html, pero por supuesto se pueden editar personificados.
+
+2º Ahora tenemos que decorar y dar estilo a nuestro html.
+//Por ejemplo para cambiar los formularios tipo text y eso, podemos poner en el div de cada form, la class class="form-group" de bootstrap:
+		<div class="form-group">
+			<label for="habilitar">Habilitar</label>
+			<div>
+				<input type="checkbox" id="habilitar" th:field="*{habilitar}">
+			</div>
+		</div>
+//Para los checkbox y radio:
+		Mirar -> https://getbootstrap.com/docs/5.0/forms/checks-radios/
+
+//Para cada input text y tal:
+		<input type="checkbox" id="habilitar" th:field="*{habilitar}" class="form-control">
+//Para los botones:
+		<input type="submit" value="Enviar" class="btn btn-primary">
+
+//Para centrar el form, lo englobamos con div y la clase de boostrap:
+	<div class="container">
+		<form th:action="@{/form}" th:object="${usuario}" method="post">
+			//Contenido del form
+		</form>
+	</div>
+
+//Poner el label de error con formato de error:
+	<div th:if="${#fields.hasErrors('genero')}" th:errors="*{genero}" class="alert alter-danger"></div>
+
+//FORMATO DEL RESULT MEJORADO:
+<body>
+
+	<div class="container">
+		<a th:href="@{/form}" class="btn btn-success btn-lg my-3">Volver</a>
+		<ul class="list-group my-2">
+			<li th:text="${titulo}" class="list-group-item active"></li>
+			<li th:text="${usuario.nombre}" class="list-group-item"></li>
+			<li th:text="${usuario.apellido}" class="list-group-item"></li>
+			<li th:text="${usuario.username}" class="list-group-item"></li>
+			<li th:text="${usuario.password}" class="list-group-item"></li>
+			<li th:text="${usuario.email}" class="list-group-item"></li>
+			<li th:text="${usuario.identificador}" class="list-group-item"></li>
+			<li th:text="${usuario.cuenta}" class="list-group-item"></li>
+			<li th:text="${#dates.format(usuario.fechaNacimiento, 'dd/MM/yyyy')}"
+				class="list-group-item"></li>
+			<li th:text="${usuario.pais.id}" class="list-group-item"></li>
+			<li th:text="${usuario.pais.codigo}" class="list-group-item"></li>
+			<li th:text="${usuario.pais.nombre}" class="list-group-item"></li>
+			<li th:text="'Habilitado: ' + ${usuario.habilitar}"
+				class="list-group-item"></li>
+			<li th:text="'Genero ' + ${usuario.genero}" class="list-group-item"></li>
+			<li th:text="${usuario.valorSecreto}" class="list-group-item"></li>
+		</ul>
+
+		<ul class="list-group my-3">
+			<li th:text="'Roles'" class="list-group-item active"></li>
+			<li th:each="role: ${usuario.roles}" th:text="${role}"
+				class="list-group-item"></li>
+		</ul>
+	</div>
+</body>
+
+**********************************
+Trabajar con bootstrap en local
+**********************************
+Hay que descargar la hoja de estilos y colocarla en resources static:
+1º Copiamos la ruta completa del get starter css -> https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css
+2º La pegamos en el navegador y boton derecho guardar como y copiamos ese archivo y lo copiamos en css.
+3º Cambiamos la ruta online por -> <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+------------------------------------------------------------------------------------------------------------------------------------------------------------

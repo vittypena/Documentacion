@@ -1,0 +1,166 @@
+---------------------------------------------------------------------------------- Subir foto ----------------------------------------------------------------------------------------
+1º En el formulario que queramos añadirla añadimos el atributo enctype="multipart/form-data", el cual es una codificacion que permite enviar archivos como data en la peticion request.
+
+2º Configuramos el application.properties configurando el maximo de tamaño que va a permitir subir la app ->
+	spring.servlet.multipart.max-file-size=10MB
+	spring.servlet.multipart.max-request-size=10MB
+
+3º Agregamos el atributo foto en el entity cliente y sus getter and setter:
+	private String foto;
+4º Insertamos la foto en la bd de la siguiente manera, por cada registro (como string vacio):
+	INSERT INTO clientes (nombre, apellido, email, create_at, foto) VALUES('Andres', 'Guzman', 'profesor@bolsadeideas.com', '2017-08-01', '');
+5º Añadimos el codigo en la vista:
+	<tr>
+		<td>File</td>
+		<td><input type="file" name="file" class="form-control"/></td>
+	</tr>
+
+6º Ir al controlador y modificar el guardar con @RequestParam Multipart File:
+	public String guardar(Cliente cliente, SessionStatus status, RedirectAttributes flash, @RequestParam("file") MultipartFile foto) {
+	//Comprobamos si foto no es vacia para trabajar con ella.
+	if(!foto.isEmpty()) {
+		Path directorioRecursos = Paths.get("src//main//resources//static/uploads");	//En esta ruta se guardaran nuestras imagenes
+		String rootPath = directorioRecursos.toFile().getAbsolutePath();	//Obtenemos el string del directorio
+		try {
+			byte[] bytes = foto.getBytes();						//Obtenemos los bytes de la imagen, tiene que ir en try catch
+			Path rutaCompleta = Paths.get(rootPath + "//" + foto.getOriginalFilename());	//Obtenemos el directorio donde queremos guardar la imagen
+			Files.write(rutaCompleta, bytes);												//Pasamos la ruta completa con los bytes y escribimos la imagen en el directorio uploads
+			cliente.setFoto(foto.getOriginalFilename());			//Finalmente pasamos la foto al cliente,el cual lo guarda despues en la bd en este mismo metodo
+		}catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+7º Creamos en static el directorio uploads 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------- Mostrar imagen en el detalle del cliente ---------------------------------------------------------------------
+1º Creamos un metodo en el controlador para ver el detalle y la foto en el cliente:
+	@GetMapping(value="/ver/{id}")
+	public String ver(@PathVariable(value = "id") Long id, Model model, RedirectAttributes flash) {
+		Cliente cliente = clienteService.findOne(id); 		//Obtenemos el cliente
+		if(cliente==null) {
+			flash.addFlashAttribute("error", "El cliente no existe en la BBDD");
+			return "redirect:/listar";
+		}
+		
+		model.addAttribute("cliente", cliente);
+		model.addAttribute("titulo", "Detalle cliente: " + cliente.getNombre());
+		
+		return "ver";
+	}
+2º Creamos la vista ver para ver el detalle de la imagen:
+	<body>
+		<div class="container py-4">
+			<div class="card-header" th:text="${titulo}"></div>
+			<div class="card-body">
+				<img class="img-thumbnail rounded float-left" style="max-width: 25%;"
+					th:src="@{'/uploads/' + ${cliente.foto}}" th:alt="${cliente.foto}" />
+
+				<ul class="list-group">
+					<li class="list-group-item" th:text="${cliente.nombre}"></li>
+					<li class="list-group-item" th:text="${cliente.apellido}"></li>
+					<li class="list-group-item" th:text="${cliente.email}"></li>
+					<li class="list-group-item" th:text="${cliente.createAt}"></li>
+				</ul>
+			</div>
+		</div>
+	</body>
+3º En este punto la foto todavia no existe ya que todavia no hemos subido ninguna, esto es porque fisicamente se guarda en el proyecto que estamos trabajando, pero una vez se hace el deploy se publica en el servidor embedido pero la imagen no existe en esa ruta, por lo tanto para que la muestre tenemos que actualizar el deploy. Si actualizamos uploads de momento funciona.
+//Lo ideal es sacarlo fuera fisicamente del directorio donde tenemos el proyecto, por lo tanto ahi agregaremos un nuevo recurso statico para nuestra aplicacion al que podamos acceder desde nuestro navegador.
+Se recomienda que un proyecto spring sea solo de lectura y no para guardar recursos, para eso se desacopla y se accede publicamente.
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------- Agregar directorio uploads externo al proyecto (Resource Handler)---------------------------------------------------------------
+1º Quitamos la carpeta uploads para guardarlo fuera.
+2º Modificamos el metodo del controlador donde teniamos la imagen:
+	@PostMapping("/form") // Guardamos en la bd
+	public String guardar(Cliente cliente, SessionStatus status, RedirectAttributes flash,
+			@RequestParam("file") MultipartFile foto) { // Recibe el objeto cliente que viene con los datos poblados y
+														// lo guarda
+		if (!foto.isEmpty()) {
+			
+			String rootPath = "C://Temp//uploads"; // Obtenemos el string del directorio
+			try {
+				byte[] bytes = foto.getBytes(); // Obtenemos los bytes de la imagen, tiene que ir en try catch
+				Path rutaCompleta = Paths.get(rootPath + "//" + foto.getOriginalFilename()); // Obtenemos el directorio
+																								// donde queremos
+																								// guardar la imagen
+				Files.write(rutaCompleta, bytes); // Pasamos la ruta completa con los bytes y escribimos la imagen en el
+													// directorio uploads
+				cliente.setFoto(foto.getOriginalFilename()); // Finalmente pasamos la foto al cliente,el cual lo guarda
+																// despues en la bd en este mismo metodo
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		clienteService.save(cliente);
+		status.setComplete(); // Eliminamos el objeto guardado en la sesion al editar o crear
+		flash.addAttribute("success", "Cliente Creado con exito!");
+		return ("redirect:listar");
+	}
+
+3º Configuramos el directorio externo mapeandolo a una ruta url con una clase de configuracion MvcConfig:
+	@Configuration
+	public class MvcConfig implements WebMvcConfigurer{
+
+		@Override
+		public void addResourceHandlers(ResourceHandlerRegistry registry) {	//Metodo para agregar directorios-recursos externos a nuestro proyecto
+			WebMvcConfigurer.super.addResourceHandlers(registry);
+			registry.addResourceHandler("/uploads/**").addResourceLocations("file:/C:/Temp/uploads/");
+		}
+	
+	}
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------- Cambios en el codigo para mejorarlo ------------------------------------------------------------------------------------------
+1º Mejoramos metodo del controlador
+	if (!foto.isEmpty()) {
+			String uniqueFilename = UUID.randomUUID().toString() + "_" + foto.getOriginalFilename();
+
+			Path rootPath =Paths.get("uploads").resolve(uniqueFilename ); //Ruta absoluta
+			
+			Path rootAbsolutPath = rootPath.toAbsolutePath();
+			
+			try {
+				Files.copy(foto.getInputStream(), rootAbsolutPath);
+				cliente.setFoto(foto.getOriginalFilename()); // Finalmente pasamos la foto al cliente,el cual lo guarda
+																// despues en la bd en este mismo metodo
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+2º Creamos la carpeta externa dentro del directorio del proyecto, spring-boot-data-jpg, clic derecho new file
+
+3º Modificamos el MscConfig para que sea ruta absoluta:
+	@Configuration
+	public class MvcConfig implements WebMvcConfigurer{
+
+		@Override
+		public void addResourceHandlers(ResourceHandlerRegistry registry) {	//Metodo para agregar directorios-recursos externos a nuestro proyecto
+			WebMvcConfigurer.super.addResourceHandlers(registry);
+		
+			String resourcePath = Paths.get("uploads").toAbsolutePath().toUri().toString();
+			
+			registry.addResourceHandler("/uploads/**").addResourceLocations(resourcePath);
+		}
+	
+	}
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------- Otra forma de cargar imagenes pero esta vez de manera programatica -----------------------------------------------------------
+Video 151
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------- Eliminar archivo de imagen -----------------------------------------------------------------------------------------------
+Video 152
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------- Clase uploadFileService --------------------------------------------------------------------------------------------
+Video 153, trata de desacoplar del controlador el tema de cargar la foto, con una clase service para ello
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------- Crear de forma automatica el directorio uploads ----------------------------------------------------------------------
+Video 154
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
