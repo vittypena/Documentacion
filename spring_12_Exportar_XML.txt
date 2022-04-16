@@ -1,0 +1,106 @@
+------------------------------------------------------------------------------------------- Un poco de teoria ------------------------------------------------------------------
+XML y Json es REST, lo que es una representacion de un uso de datos en un formato compatible, basicamente para compartir informacion, integrar servicios en otras aplicaciones.
+Hay muchas formas de implementar rest, podemos utilizar un controlador anotando un metodo con @ResponseBody el cual retornara una representacion de los datos con REST ya sea Json o XML.
+Otra forma es con un @RestControler, el cual esta 100% enfocado a REST, ya que el anterior tb controlaba html.
+Y la tercera forma es con una clase View.
+Si por ejemplo vamos a implementar un API REST lo suyo es un @RestControler.
+Si necesitamos un controlador que maneje diferentes con @ResponseBody.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+****************************************
+Con Clase View
+****************************************
+--------------------------------------------------------------- Object XML Mapping ------------------------------------------------------------------------------------------------------------------------------------
+//Permite mapear un objetoa un XML o un XML a un objeto, bidireccional, de Objeto a XML se llama marshalling el proceso, al reves Unmarshaller.
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------ Agregar Dependencias -----------------------------------------------------------------------------------------------
+https://mvnrepository.com/artifact/org.springframework/spring-oxm
+	Dependencia en pom.xml quitando la linea de version, (aqui no la he pegado):
+		<!-- https://mvnrepository.com/artifact/org.springframework/spring-oxm -->
+		<dependency>
+			    <groupId>org.springframework</groupId>
+			    <artifactId>spring-oxm</artifactId>
+		</dependency>
+
+//Si tenemos la version JDK 9 o superior tenemos que incluir las siguientes dependencias, quitando la linea de version:
+	https://mvnrepository.com/artifact/javax.xml.bind/jaxb-api
+	https://mvnrepository.com/artifact/org.glassfish.jaxb/jaxb-runtime
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------ Creando Clase XML Wrapper --------------------------------------------------------------------------------------------------	
+1º En un fichero de confi @Configuration añadimos el metodo correspondiente para poder manejar el marshaller:
+	@Bean
+	public Jaxb2Marshaller jaxb2Marshaller() {
+		Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
+		marshaller.setClassesToBeBound(new Class[] {com.bolsadeideas.springboot.app.view.xml.ClienteList.class});	//En el segundo parametro ponemos la clase wrapper
+		return marshaller;
+	}
+
+2º Creamos el package com.bolsadeideas.springboot.app.view.xml y aqui dos clases ClienteList y ClienteListXMLView
+
+//Xml necesita la clase Wrapper para serializarse con listas, Json no, asi que necesitamos el Wrapper. Esta clase envuelve nuestra lista, para poder convertilo. Esto lo hice en clase, con las anotaciones.
+
+3º La clase Wrapper sera el CLienteList:
+	@XmlRootElement(name="clientes")
+	public class ClienteList {
+
+		@XmlElement(name="cliente")
+		public List<Cliente> clientes;
+
+		public ClienteList() {
+		
+		}
+
+		public ClienteList(List<Cliente> clientes) {
+			this.clientes = clientes;
+		}
+
+		public List<Cliente> getClientes() {
+			return clientes;
+		}		
+	
+	}
+
+4º La clase ClienteListXMLView que sera la vista, la implementamos:
+	@Component("listar.xml")
+	public class ClienteListXMLView  extends MarshallingView{
+
+	
+		@Autowired
+		public ClienteListXMLView(Jaxb2Marshaller marshaller) {
+			super(marshaller);
+		}
+
+		@Override
+		protected void renderMergedOutputModel(Map<String, Object> model, HttpServletRequest request,
+				HttpServletResponse response) throws Exception {
+		
+			//Tenemos que eliminar todos los model que no sean la lista clientes y que hayamos pasado desde el controlador que esta gestionando esta ruta, listar en este caso
+			model.remove("titulo");
+			model.remove("page");
+		
+		
+			//El cliente antes de borrarlo tenemos que obtener los clientes para hacer la conversion, en este caso era un Page de clientes
+			Page<Cliente> clientes = (Page<Cliente>) model.get("clientes");
+			model.remove("clientes");	//Una vez ya guardado podemos borrar el model
+		
+			model.put("clienteList", new ClienteList(clientes.getContent())); //Creamos la instancia con el Wrapper. El getContent es porque estaba paginado.
+
+			super.renderMergedOutputModel(model, request, response);
+		}
+	
+	}
+
+5º Implementar link para exportar a xml:
+	<a class="btn btn-outline-success btn-xs float-right" th:href="@{'/listar'(format=xml)}">XML</a>
+
+6º En este caso al serializar la lista de clientes daria error, ya que los clientes tienen facturas y las facturas clientes entonces al serializar seria un bucle infinito
+Para solucionar esto en la factura debemos colocar en el getClientes la anotacion @XmlTransient para que omita este atributo en la serializacion, al ser bidireccional para que no vaya hacia atras en factura, siempre hacia adelante.
+	@XmlTransient
+	public Cliente getCliente() {			//Ha de ser en el get.
+		return cliente;
+	}	
+
+7º En el application properties no hace falta poner los media-types porque Json y XML al ser REST los tiene por defecto.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

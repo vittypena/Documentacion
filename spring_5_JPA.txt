@@ -705,3 +705,493 @@ public class PageRender<T> {
 	@JoinColumn(name="factura_id")
 	private List<ItemFactura> items;
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------- Listar Factura en vista --------------------------------------------------------------------------------------------------------------------------------------------------------------
+//En la vista ver.html
+			<div th:if="${#lists.isEmpty(cliente.facturas)}"
+				class="aler alert-info my-4"
+				th:text="'No hay facturas asignadas para el cliente ' + ${cliente.nombre} + ' ' + ${cliente.apellido}"></div>
+			<table th:if="${not #lists.isEmpty(cliente.facturas)}"
+				class="table table-bordered table-striped my-4">
+				<thead class="thead-dark">
+					<tr>
+						<th>folio</th>
+						<th>descripcion</th>
+						<th>fecha</th>
+						<th>total</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="factura: ${cliente.facturas}">
+						<td th:text="${factura.id}"></td>
+						<td th:text="${factura.descripcion}"></td>
+						<td th:text="${factura.createAt}"></td>
+						<td th:text="${factura.total}"></td>		<!-- factura.total es un metodo publico y retorna total, por lo tanto lo coje del get -->
+					</tr>
+				</tbody>
+			</table>
+
+//Clase Factura
+	@Entity
+@Table(name = "facturas")
+public class Factura implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+	private String descripcion;
+	private String observacion;
+
+	@Temporal(TemporalType.DATE)
+	@Column(name = "create_at")
+	private Date createAt;
+
+	@ManyToOne(fetch=FetchType.LAZY)
+	private Cliente cliente;
+
+	@OneToMany(fetch=FetchType.LAZY, cascade=CascadeType.ALL)
+	@JoinColumn(name="factura_id")
+	private List<ItemFactura> items;
+	
+	@PrePersist
+	public void prePersist() { // Se ejecuta justo antes de que se guarde en la base de datos
+		createAt = new Date();
+	}
+	
+	public Factura() {
+		this.items = new ArrayList<ItemFactura>();
+	}
+
+
+
+	public void addItemFactura(ItemFactura item) {
+		this.items.add(item);
+	}
+	
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public String getDescripcion() {
+		return descripcion;
+	}
+
+	public void setDescripcion(String descripcion) {
+		this.descripcion = descripcion;
+	}
+
+	public String getObservacion() {
+		return observacion;
+	}
+
+	public void setObservacion(String observacion) {
+		this.observacion = observacion;
+	}
+
+	public Date getCreateAt() {
+		return createAt;
+	}
+
+	public void setCreateAt(Date createAt) {
+		this.createAt = createAt;
+	}
+
+	public Cliente getCliente() {
+		return cliente;
+	}
+
+	public void setCliente(Cliente cliente) {
+		this.cliente = cliente;
+	}
+
+	public List<ItemFactura> getItems() {
+		return items;
+	}
+
+	public void setItems(List<ItemFactura> items) {
+		this.items = items;
+	}
+
+	public Double getTotal() {
+		Double total = 0.0;
+		
+		int size = items.size();
+		for(int i= 0; i<size; i ++) {
+			total += items.get(i).calcularImporte();
+		}
+		return total;
+	}
+	
+}
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------- Controlador Clase factura con handler crear ------------------------------------------------------------------------------------------------------------------------------------
+@Controller
+@RequestMapping("/factura")
+@SessionAttributes("factura")	//Mantenemos el objeto factura hasta que se guarde en el form
+public class FacturaController {
+	
+	@Autowired
+	private IClienteService clienteService;
+	
+	@GetMapping("/form/{clienteId}")		//IMPORTANTE AQUI VEMOS EJEMPLO CON EL GETMAPPING TB {id}
+	public String crear(@PathVariable(value="clienteId") Long clienteId, Model model, RedirectAttributes flash) {
+		
+		Cliente cliente = clienteService.findOne(clienteId);	//Necesitamos el cliente para dar de alta la factura
+		if(cliente == null) {
+			flash.addAttribute("error", "El cliente no existe en la bse de datos");
+			return "redirect:/listar";
+		}
+		
+		Factura factura = new Factura();
+		factura.setCliente(cliente);
+		
+		model.addAttribute("factura", factura);
+		model.addAttribute("titulo", "Crear Factura");
+		return "form";
+	}
+}
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------ Form Factura Vista -------------------------------------------------------------------------------------------------------------------------------------------------------
+<body>
+
+	<header>
+		<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+			<div class="container-fluid">
+				<a class="navbar-brand" href="#">Spring Boot</a>
+				<button class="navbar-toggler" type="button"
+					data-bs-toggle="collapse" data-bs-target="#navbarNav"
+					aria-controls="navbarNav" aria-expanded="false"
+					aria-label="Toggle navigation">
+					<span class="navbar-toggler-icon"></span>
+				</button>
+				<div class="collapse navbar-collapse" id="navbarNav">
+					<ul class="navbar-nav">
+						<li class="nav-item"><a class="nav-link active"
+							aria-current="page" href="#">Home</a></li>
+						<li class="nav-item"><a class="nav-link" th:href="@{/listar}">Clientes</a>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+		<div class="alert alert-success" th:if="${success != null}"
+			th:text="${sucess}"></div>
+		<div class="alert alert-danger" th:if="${error != null}"
+			th:text="${error}"></div>
+		<div class="alert alert-warning" th:if="${warning != null}"
+			th:text="${warning}"></div>
+		<div class="alert alert-info" th:if="${info != null}"
+			th:text="${info}"></div>
+	</header>
+	<div class="container">
+		<form th:action="@{/factura/form/}" th:object="${factura}"
+			method="post">
+			<div class="form-group row">
+				<label class="col-sm-2 col-form-label" th:text="'Cliente'"></label>
+				<div class="col-sm-6">
+					<!-- El input de nombre y apellido es solo lectura, con el disabled, es para mostrar de que cliente es la factura -->
+					<input
+						th:value="${factura.cliente.nombre} + '' + ${factura.cliente.apellido}"
+						class="form-control" disabled='disabled' />
+				</div>
+				<div class="form-group row">
+					<label class="col-sm-2 col-form-label" th:text="'Descripcion'"></label>
+					<div class="col-sm-6">
+						<input type="text" th:field="*{description}" class="form-control" />
+					</div>
+				</div>
+				<div class="form-group row">
+					<label class="col-sm-2 col-form-label" th:text="'Observacion'"></label>
+					<div class="col-sm-6">
+						<textarea th:field="*{observacion}" class="form-control">/</textarea>
+					</div>
+				</div>
+				<div class="form-group row">
+					<div class="col-sm-6">
+						<input type="submit" th:value="${titulo}"
+							class="btn btn-secondary" />
+					</div>
+				</div>
+		</form>
+	</div>
+</body>
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------------- Ajax con jQuery UI para autocompletar -------------------------------------------------------------------------------------------------------------
+//Vamos a trabajar con una tarea asincrona para que busque los productos y autocomplete a traves de JQuery con Ajax y vamos a trabajar con el controlador de spring con rest retornando un JSON con los resultados encontrados a medida que vayamos escribiendo las palabras.
+//La idea es tener un fragmento en Ajax con Jquery y reutilizarlo
+
+1º Preparamos el proyecto agregando una libreria, link -> https://jquery.com/, descargando y pegando en static js el fichero jquery-3.2.1.min.js 
+
+2º Descargamos el jQuery user interface la version stable -> https://jqueryui.com/
+
+3º Una vez descomprimido, copiamos jquery-ui.min.css y jquery-ui.min.js y lo llevamos al proyecto a static css el css y a static js el js
+	
+4º En la carpeta que tengamos el fragmento de layout con los estilos copiamos en el head -> <link rel="stylesheet" th:href="@{/css/jquery-ui-mim.css}" />
+
+5º En el footer de la misma ruta ponemos la libre
+	<script th:src="@{/js/jquery-3.6.0.min.js}"></script>
+		<script th:src="@{/js/popper.min.js}"></script>
+		<script th:src="@{/js/bootstrap.min.js}"></script>
+		<script th:src="@{/js/jquery-ui.min.js}"></script>
+	</footer>
+6º Creamos el campo autocomplete para buscar el producto en el form de factura (no esta mapeado al objeto entity solo es un input para poder buscar productos y agregar estos a la factura):
+//Este campo va a realizar una peticion asincrona Ajax con jQuery.
+	<div class="form-group row">
+		<label for="buscar_producto" class="col-sm-2 col-form-label" th:text="'Buscar Producto'"></label>
+		<div class="col-sm-6">
+			<input type="text" name="buscar_producto" id="buscar_producto" class="form-control"/>
+		</div>
+	</div>	
+
+7º Creamos una plantilla para el javaScript, creamos el folder js en la carpeta factura y dentro autocomplete-productos.html, el cual sera un fragmento de javaScript:
+	<!DOCTYPE html>
+	<html xmlns:th="http://www.thymeleaf.org">
+	<body>
+		<script type="text/javascript" th:fragment="javascript">
+		//Nos aseguramos de que el documento html este completamente cargado con el metodo ready
+		$(document).ready(function(){
+			$("#buscar_producto").autocomplete({
+				//Recibe dos objetos
+				//El metodo source se encarga de hacer la peticion Ajax
+				//El metodo select se encarga de procesar el resultado y hacer algo con los resultados
+				source: function(request, response){	//muestra los datos a medida que vamos escribiendo
+					$.ajax({
+						url:"/factura/cargar-productos/" + request.term,	//es el mapping url para el handler que busca parametros
+						dataType: "json",
+						data: {
+							term:request.term	//Es el termino que estamos introduciendo
+						},
+						success: function(data){			//Recibe los datos
+							response($.map(data, function(item){	//Para pasarlo al autocomplete usamos el responde
+								return {		//Por cada item va a retornar el id del producto a traves del item, el label y el precio
+									value: item.id,
+									label: item.nombre,
+									precio: item.precio,
+								};
+							}));
+						},
+					});
+				},
+				select: function(event, ui){	//Se encarga de seleccionar ese valor y hacer alguna tarea
+					$("#buscar_producto").val(ui.item.label);  //Pone la seleccion en el campo
+					var linea =$("#plantillaItemsFactura").html();		//Llamamos a la plantilla para ir completando la otra tabla de item_factura
+					
+					linea= linea.replace(/{ID}/g, ui.item.value);		//Reemplazamos los valores
+					linea= linea.replace(/{NOMBRE}/g, ui.item.label);
+					linea= linea.replace(/{PRECIO}/g, ui.item.precio);
+					
+					//Ahora cargamos estos valores en la tabla cargar_productos donde los acabaremos usando para crear el item_factura
+					$("#cargarItemProductos tbody").append(linea);
+					
+					return false;
+				},
+				focus: function(event, ui){		//Para que si nos movemos de las flechas no salga el id
+				    event.preventDefault();
+				    $('input[name="buscar_producto"]').val(ui.item.label);
+				},
+			});
+		});
+		</script>
+	</body>
+	</html>
+8º Lo agregamos al form.html debajo del footer e implementamos el codigo ahi:
+	<script th:replace="factura/js/autocomplete-productos :: javascript">
+
+9º Usaremos Jpa para buscar el producto retornado, para eso tenemos que implementar antes las clases repositorio y tal, para eso los siguientes pasos.
+
+10º Creamos el repository en la carpeta de dao como interfaz IProductoDao, a este le meteremos un metodo personalizado para hacer una query like% e ir autocompletando con esa consulta:
+//Como esto es una interfaz solo ponemos que tenemos que implementar el metodo sin implementar, lo implementaremos en el service.
+	public interface IProductoDao extends CrudRepository<Producto, Long>{
+		//Implementamos el metodo personalizado para poder buscar por una query con like% e ir autocompletando con ese like%
+	
+		//En la query con ?1 hacemos referencia al parametro 1 que hemos metido, es decir, %?1% es = %parametro%
+		@Query("select p from Producto p where lower(p.nombre) like %?1%")
+		public List<Producto> findByNombre(String term); //Recibira el termino que vamos metiendo e implementamos la consulta con like con la anotacion @Query para modificar y personalizar el metodo
+	}
+
+11º Agregamos el metodo en la interface del ClienteService, la cual usara ClienteServiceImpl, por buena practica -> public List<Producto> findByNombre(String term);
+ 
+12º Hay que modificar la clase service, ya que es la que interactua con el controlador y tiene implementado la interfaz con el metodo. Modificamos ClienteServiceImpl. Recordamos que el service es una fachada para trabajar con el repository:
+	@Autowired
+	private IProductoDao productoDao;		//Inyectamos el repository
+	
+	@Override
+	@Transactional(readOnly = true)				//Implementamos el metodo que usara el controller para introducir el term.
+	public List<Producto> findByNombre(String term) {
+		return productoDao.findByNombre(term);
+	}
+
+13º Hacemos uso de ello en el controller FacturaController:
+	@GetMapping(value="/cargar-productos/{term}", produces={"application/json"})	//Debemos poner la url que pusimos en el js del form del autocompletado, con produces genera la salida Json y en la url le pasamos el term tb
+	public @ResponseBody List<Producto> cargarProductos(@PathVariable String term){	//@ResponseBody suprime el cargar una vista de thymeleaf y en vez de eso toma el resultado retornado convertido a json y lo puebla dentro  del body en la respuesta
+		return productoDao.findByNombre(term.toLowerCase());
+	}
+!!!!!!NOTA SOLUCION A ERROR -> SI EN EL LAYOUT DONDE TENEMOS EL FOOTER CON LAS LIBRERIAS NO LO INVOCAMOS ANTES DE EL FRAGMENTO NO CARGA LAS LIBRERIAS, tal que asi:
+		<footer th:replace="layout/layout :: footer"></footer>
+		<script th:replace="factura/js/autocomplete-productos :: javascript"></script>
+	</body>
+!!!!!Solucion al error 2, si no se ven los estilos del Jquery metemos en el head del form tb: <link rel="stylesheet" th:href="@{/css/jquery-ui.min.css}" />
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------ Crear los items_factura con JQuery ---------------------------------------------------------------------------------------------------------------------------------------------
+1º Creamos plantilla-items.html dentro de factura, para reemplazar esta plantilla posteriormente con JQuery y poder servir como un molde/plantilla para poder crear de forma dinamica los items de la factura con JQuery:
+	<!DOCTYPE html>
+	<html xmlns:th="http://www.thymeleaf.org">
+	<body>
+	<!-- Es una plantilla oculta con class="d-none", para a traves de Jquery con js leamos la plantilla y reemplacemos los valores. -->
+		<table th:fragment="itemsFactura" class="d-none">
+			<tbody  id="plantillaItemsFactura">
+				<tr id="row_{ID}"><!-- Este valor del id se reemplaza luego con el valor real del itemFactura a traves de JQuery, igual que los otros-->
+					<td class="d-none"><input type="hidden" value="{ID}" name="item_id[]"/></td>
+					<td>{NOMBRE}</td>
+					<td>{PRECIO}</td>
+					<td><input type="number" value="1" name="cantidad[]" id="cantidad_{ID}" class="form-control col-sm-4"/></td>
+				</tr>
+			</tbody>
+		</table>
+	</body>
+	</html>
+
+2º Nos vamos a form.html de factura y agregamos la plantilla justo debajo del campo buscar producto -> <table th:replace="factura/plantilla-items :: itemsFactura"></table>
+
+3º Creamos los items de la factura, para ello justo debajo de la plantilla hacemos una tabla que va a contener todos los items y se va a ir rellenando de forma dinamica cuando se selecciona un producto del autocomplete con JQuery:
+	<table id="cargarItemProductos" class="table table-sm table-striped table-hover">
+		<thead>
+			<tr>
+				<th>Nombre</th>
+				<th>Precio</th>
+				<th>Cantidad</th>
+			</tr>							
+		</thead>
+		<tbody>
+		</tbody>
+	</table>
+
+4º Ahora en el autocompleteproductos donde ibamos mostrando los productos autocompletando en el select, introducimos el codigo necesario para con los seleccionados ir introduciendolos.
+//Tenemos que ir a buscar el contenido de la plantilla-items.html y reemplazar los valores, para ello el modificamos el autocomplete-productos.html, la funcion select:
+
+				select: function(event, ui){	//Se encarga de seleccionar ese valor y hacer alguna tarea
+					$("#buscar_producto").val(ui.item.label);  //Pone la seleccion en el campo
+					var linea =$("#plantillaItemsFactura").html();		//Llamamos a la plantilla para ir completando la otra tabla de item_factura
+					
+					linea= linea.replace(/{ID}/g, ui.item.value);		//Reemplazamos los valores
+					linea= linea.replace(/{NOMBRE}/g, ui.item.label);
+					linea= linea.replace(/{PRECIO}/g, ui.item.precio);
+					
+					//Ahora cargamos estos valores en la tabla cargar_productos donde los acabaremos usando para crear el item_factura
+					$("#cargarItemProductos tbody").append(linea);
+					
+					return false;
+				},
+
+5º Agregamos el campo total.
+	-En el form:
+		<tr>
+			<th>Nombre</th>
+			<th>Precio</th>
+			<th>Cantidad</th>
+			<th>Total</th>
+		</tr>	
+	-En la plantilla-items:
+				input type="number" value="1" name="cantidad[]" id="cantidad_{ID}" class="form-control col-sm-4" onchange="itemsHelper.calcularImporte({ID}, {PRECIO}, this.value);"/></td>		//Añadimos el onchange
+				<td><span id="total_importe_{ID}">0</span></td>
+			</tr>
+		</tbody>
+	-En el autocomplete-productos.html tneemos que añadir un itemHelper para poder hacer el calculo, eliminar items, si seleccionamos otro más que no lo añada abajo si no que sume la cantidad...:
+		Añadimos para calcular ->
+					$("#cargarItemProductos tbody").append(linea);
+					itemsHelper.calcularImporte(ui.item.value, ui.item.precio, 1)	//Le pasamos el id con ui.item.value y el precio con lo otro
+					
+					return false;
+					//Y abajo un metodo con el helper:
+					var itemsHelper = {
+						calcularImporte: function(id, precio, cantidad){
+							$("#total_importe_" + id).html(parseInt(precio) * parseInt(cantidad));	//Tenemos esta variable en la plantilla en el span y con html agregamos contenido, en este caso la cantidad. 
+						}
+					}
+					</script>
+
+6º Evitar que cuando exista un producto cree una linea repetida, simplemente que se añada al ya existente en la cantidad, añadimos en el itemHelper el siguiente metodo:
+				,
+				hasProducto: function(id){		//Busca linea por linea si existe el ID del producto
+					var resultado = false;
+					$('input[name="item_id[]"]').each(function(){
+						if(parseInt(id) == parseInt($(this).val()) ){
+							resultado = true;
+						}
+					});
+					return resultado;	
+				},
+				incrementaCantidad: function(id, precio){
+					var cantidad = $("#cantidad_" + id).val() ? parseInt($("#cantidad_" + id).val()) : 0;
+					$("#cantidad_" + id).val(++cantidad);
+					this.calcularImporte(id, precio, cantidad)
+				}
+//Comprobamos en el select function que no exista antes de añadirlo, usando este metodo recien creado:
+	select: function(event, ui){	//Se encarga de seleccionar ese valor y hacer alguna tarea
+					$("#buscar_producto").val(ui.item.label);  //Pone la seleccion en el campo
+					
+					if(itemsHelper.hasProducto(ui.item.value)){
+						itemsHelper.incrementaCantidad(ui.item.value, ui.item.precio);
+						return false;
+					}
+
+7º Eliminar linea de la factura:
+	//Añadimos el metodo en el itemHelper del autompletado.html
+				,
+				eliminarLineaFactura: function(id){
+					$("#row_" + id).remove();
+				}
+	//En la plantilla-items.html añadimos la siguiente linea para mostrar el enlace de eliminar en la tabla:
+	 <td><a href="#" class="btn btn-danger btn-xs" onclick="itemsHelper.eliminarLineaFactura({ID});">X</a></td>
+	
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------------ JOIN FETCH --------------------------------------------------------------------------------------------------------
+//Es la mejor forma cuando trabajamos ocn un objeto entity con muchas relaciones
+//Sirve para que en vez de hacer 7 consultas por ejemplo lo haga en una con JOIN FETCH, haciendo que el Dao obtenga la factura por ejemplo pero con todas las relaciones hechas en vez de realizar en la vista las consultas de forma perezosa con lazys para ver todas las relaciones.
+
+1º En IFacturaDao incluimos el siguiente metodo indicando las relaciones para evitar que en la vista haga tantas consultas para llegar a la que necesita:
+	public interface IFacturaDao extends CrudRepository<Factura, Long>{
+
+		//Factura se une a cliente y a items directamente y luego a producto desde items factura, l es alias del itemfactura por lo tanto lo obtenemos desde ahi
+		//cliente y producto son atributos de factura por eso se obtienen desde f.
+		@Query("select f from Factura f join fetch f.cliente c join fetch f.items l join fetch l.producto where f.id =?1")
+		public Factura fetchByIdWithClienteWithItemFacturaWithProducto(Long id); 
+	}
+
+2º Añadimos este metodo en la interfaz del IClienteService:
+	public Factura fetchByIdWithClienteWithItemFacturaWithProducto(Long id);
+
+3º Implementamos el metodo en la clase service:
+	@Override
+	@Transactional(readOnly = true)
+	public Factura fetchByIdWithClienteWithItemFacturaWithProducto(Long id) {
+		return facturaDao.fetchByIdWithClienteWithItemFacturaWithProducto(id);
+	}
+
+4º Lo ponemos en el controlador (en este caso modificamos FacturaController el metodo que ya teniamos) y cambiamos el anterior obtener la factura por el id por el nuevo, que hara menos consultas gracias a la mejora:
+
+	@GetMapping("/ver/{id}")
+	public String ver(@PathVariable(value="id") Long id, Model model, RedirectAttributes flash) {
+		
+		//Factura factura = clienteService.findFacturaById(id);
+		
+		Factura factura = clienteService.fetchByIdWithClienteWithItemFacturaWithProducto(id);
+	
+//EJEMPLO CON CLIENTE TRAYENDO SUS FACTURAS, en este caso por ejemplo si intentasemos meternos en un cliente sin facturas nos daria error al hacer el inner join y no tener facturas, aunque ese cliente si que exista, para solucionarlo debemos hacer left join.
+	@Query("select c from Cliente c left join fetch c.facturas f where c.id = ?1")
+	public Cliente fetchByIdWithFacturas(Long id);
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

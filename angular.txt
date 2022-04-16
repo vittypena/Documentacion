@@ -3,6 +3,11 @@ Visual Studio Code -> https://code.visualstudio.com/
 --Extensiones:
 	-Activitus Bar, Code Runner, Flatland Monokai Theme, Bracket Pair Colorizer, Bracket-pair-colorizer-2.colors, Material icon theme, Angular snippets, Angular language service, Angular inline, Auto close tag, Typescript importer
 
+Alternativa Visual Studio Code- Atom-> https://atom.io/
+--Extensiones:
+	-angular-2-typescript-snippets, atom-typescript, atom-bootstrap3, atom-bootstrap4, v-bootstrap4, platformio-ide-terminal, file-icons, emmet, minimap
+--Escogemos theme: 
+
 Postman -> https://www.postman.com/downloads/
 --Sirve mucho para hacer pruebas con los endpoints, antes de hacer la integracion con angular se prueba con esto.
 --Login : victorpenawow@gmail.com, vittywow, pass without .
@@ -538,12 +543,6 @@ ng build --prod
 **************************
 ---------------------------------------------------------------------------------------------------------
 
-----------------Explicacion sergi-------------------------------
-[12:31] Sergi Palomeque Montoy
-no, eso no hace falta, a menos que te muevan para otro lado vaya, nosotros aquí con que sepamos de Angular , typescript, java, springboot e hibernate ya tiramos
-
-[12:31] Sergi Palomeque Montoy
-Y en front verás algunas etiquetas llamadas <Desy-xxxxx> que son del framework de Aragón que es una completa basura de utilizar
 
 
 

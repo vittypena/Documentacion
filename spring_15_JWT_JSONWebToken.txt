@@ -1,0 +1,578 @@
+https://jwt.io/
+---------------------------------------------------------------------------------- Autenticacion basada en JWT -----------------------------------------------------------------------------------------
+Los tokens es la alternativa más segura para el login o autenticacion.
+Trabajan muy bien cuando la app no esta hecha en un sitio solo y esta formada por varias apis.
+
+Con este metodo el usuario envia un codigo alfanumerico al servidor y el servidor se encarga de descifrar y validar y va  a ver si el usuario existe o esta registrado ene l sistema y si tiene permisos  en sus sroles para acceder a derterminadas partes.
+Esto permite evitar tener que guardar sesiones en nuestro servidor y gracias a esto nuestro servidor funciona más ligero.
+
+JWT es un estandar abierto para implementar seguridad en nuestra web. 
+
+Los tokens se pueden manipular pero eso lo detecta.
+
+Se pueden almacenar en Local Storage o Session Storage, en local permanece de forma persistente en el equipo, podemos reiniciar y continua almacenada, en sesion al cerrar el navegador efe, se puede mirar con f12 y la pesataña application.
+Para caducidad extensa o indefinida Local Storage para poca caducidad Session Storage.
+
+//Podemos decodificar un token con el siguiente codigo javaScript:
+	let token = "contenidodeltoken"
+	let payload = token.split(".")[1]
+	JSON.parse(window.atob(payload))
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+!!Decir que se suele hacer con la dependecia que ahorra trabajo -> https://mvnrepository.com/artifact/org.springframework.security/spring-security-jwt
+------------------------------------------------------------------------------ Web Token Configuraciones ---------------------------------------------------------------------------------------------------
+https://jwt.io/libraries
+La libreria que vamos a usar es: maven: io.jsonwebtoken / jjwt-root / 0.11.1, de las más usadas.ç
+1º Agregamos la dependencia de JWT
+	<dependency>
+		<groupId>io.jsonwebtoken</groupId>
+		<artifactId>jjwt-api</artifactId>
+		<version>0.11.2</version>
+	</dependency>
+	<dependency>
+		<groupId>io.jsonwebtoken</groupId>
+		<artifactId>jjwt-impl</artifactId>
+		<version>0.11.2</version>
+		<scope>runtime</scope>
+	</dependency>
+	<dependency>
+		<groupId>io.jsonwebtoken</groupId>
+		<artifactId>jjwt-jackson</artifactId> <!-- or jjwt-gson if Gson is preferred -->
+		<version>0.11.2</version>
+		<scope>runtime</scope>
+	</dependency>
+	<dependency>
+		<groupId>org.bouncycastle</groupId>
+		<artifactId>bcprov-jdk15on</artifactId>
+		<version>1.60</version>
+		<scope>runtime</scope>
+	</dependency>
+
+2º Configuramos el Archivo de springSecurity para adaptarlo y que no trabaje con sesiones:
+	//Añadimos esto en el metodo de configure, para deshabilitar el csrf, ya que vamos a usar JSonWeb Token y no el token csrf, esto mas que nada es para cuando trabajamos con formulario de spring, más que con rest. Tenemos que asegurarnos de que en las vistas
+	//No tengamos el input hidden de csrf de forma explicita y poner la session sin estado, ya que JWT lo usa asi, sin sessiones, liberando carga.:
+		.and()
+		.csrf().disable()		
+		.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+		;
+
+2aº El metodo del configure quedaria asi:
+	@Override
+	protected void configure(HttpSecurity http) throws Exception {
+		//Asignamos nuestras rutas para permitir el acceso publico o restringirlo
+		http.authorizeRequests()
+		.antMatchers("/", "/css/***", "/js/***", "/images/**", "/listar**", "/locale").permitAll()
+		.anyRequest().authenticated()
+		.and()
+		.csrf().disable()		
+		.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+		;
+	}
+3º // Con postman podemos comprobar el acceso a las rutas.
+
+**************************************
+  Crear el Filtro para Generar Token
+**************************************
+4º Necesitamos un filtro que se encarga de raealizar la autenticacion. Un interceptor, que se ejecuta en el request, va a a realizar el login segun las credenciales.
+//Este filtro trabaja con nuestro proveedor de autenticacion en nuestro caso JpaUserDetailsService, revisar Spring Security utilizando JPA
+4bº Creamos el package com.bolsadeideas.springboot.app.auth.filter y la clase JWTAuthenticationFilter que sera el filtro:
+	public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilter{
+
+		private AuthenticationManager authenticationManager;
+	
+	
+	
+		public JWTAuthenticationFilter(AuthenticationManager authenticationManager) {
+			//setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher("/api/login", "POST"));	//Por si queremos personalizar rutas del login en vez de /login
+			this.authenticationManager = authenticationManager;
+		}
+
+		@Override
+		public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+				throws AuthenticationException {
+		
+			String username = obtainUsername(request);	//Nombre que tengamos en el entity Usuario
+			String password = obtainPassword(request);	// "" ""
+		
+			if(username == null) {
+				username = "";
+			}
+		
+			if(password == null) {
+			password = "";
+			}
+			
+			//Debug
+			if (username != null && password != null) {
+				logger.info("Username desde request parameter (form-data):" + username);
+				logger.info("Password desde request parameter (form-data):" + password);
+			}
+		
+			UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username, password);
+		
+			//Creamos el usernamePasswordAuthenticationTOken:
+		
+			return authenticationManager.authenticate(authToken);
+		}
+	
+	}
+5º Registramos el filtro en la clase de configuracion con -> .addFilter(new JWTAuthenticationFilter(authenticationManager())), la clase de configuracion queda asi por el momento:
+	@EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
+	@Configuration
+	public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
+
+		@Autowired
+		private BCryptPasswordEncoder passwordEncoder;
+
+		@Autowired
+		private JpaUserDetailsService userDetailsService;
+
+		@Autowired
+		public void configurerGlobal(AuthenticationManagerBuilder builder) throws Exception {
+			builder.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder);
+		}
+
+		@Autowired
+		private LoginSuccessHandler successHandler;
+
+		@Override
+		protected void configure(HttpSecurity http) throws Exception {
+			// Asignamos nuestras rutas para permitir el acceso publico o restringirlo
+			http.authorizeRequests().antMatchers("/", "/css/***", "/js/***", "/images/**", "/listar**", "/locale")
+				.permitAll().anyRequest().authenticated().and()
+				.addFilter(new JWTAuthenticationFilter(authenticationManager())).csrf().disable().sessionManagement()
+				.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+		}
+
+	}
+
+6º Podemos comprobar con POSTMAN si se puede realizar el login poniendo la ruta en POST http://localhost:8080/login, el apartado de body y en form data metiendo el username y password, luego send, tambien podriamos hacerlo con raw que seria en JSON.
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------- Generando el JWT ------------------------------------------------------------------------------------------------------------------
+public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilter{
+
+	private AuthenticationManager authenticationManager;
+	
+	public static final Key SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+	
+	public JWTAuthenticationFilter(AuthenticationManager authenticationManager) {
+		this.authenticationManager = authenticationManager;		
+		//setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher("/api/login", "POST"));	//Por si queremos personalizar rutas del login en vez de /login
+	}
+
+	@Override
+	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+			throws AuthenticationException {
+		
+		String username = obtainUsername(request);	//Nombre que tengamos en el entity Usuario
+		String password = obtainPassword(request);	// "" ""
+		
+		if(username == null) {
+			username = "";
+		}
+		
+		if(password == null) {
+			password = "";
+		}
+		
+		//Debug
+		if (username != null && password != null) {
+			logger.info("Username desde request parameter (form-data):" + username);
+			logger.info("Password desde request parameter (form-data):" + password);
+		}
+		
+		//Creamos el usernamePasswordAuthenticationTOken:
+		UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username, password);			
+				
+		return authenticationManager.authenticate(authToken);
+	}
+
+	@Override
+	protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
+			Authentication authResult) throws IOException, ServletException {
+		//En este metodo la autenticacion ha salido bien por lo tanto creamos el token que vamos a retornar al usuario.
+		Collection<? extends GrantedAuthority> roles = authResult.getAuthorities(); //Obtenemos los roles		
+		Claims claims = Jwts.claims();
+		claims.put("authorities", new ObjectMapper().writeValueAsString(roles));//Guardamos los roles en el JWT	
+			
+        String token = Jwts.builder()
+        				.setClaims(claims)	//Contiene los roles
+                        .setSubject(authResult.getName())
+                        .signWith(SECRET_KEY)
+                        .setIssuedAt(new Date())	//Fecha de creacion
+                        .setExpiration(new Date(System.currentTimeMillis() + 14000000)) //Expira en 4 horas con + 14000000
+                        .compact();
+		
+		//Guardamos el token en la cabecera
+		response.addHeader("Authorization", "Bearer ".concat(token));
+		
+		//Pasar el token a una structura JSON tb
+		Map<String, Object> body = new HashMap<String, Object>();
+		body.put("token", token);	//Pasamos el token
+		body.put("user", (User)authResult.getPrincipal());	//Pasamos el objeto user entero
+		body.put("mensaje", String.format("Hola %s, has iniciado sesion con exito", authResult.getName()));	//Pasamos un mensaje de exito
+		
+		//Guardamos el body en formato JSON en la respuesta  
+		response.getWriter().write(new ObjectMapper().writeValueAsString(body));//Convertimos el objeto de java en un JSON
+		response.setStatus(200); //Todo esta OK de estado
+		response.setContentType("application/json");		
+	}
+	
+}
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-------------------------------------------------------------- Permitir enviar los datos al Token en JSON en vez de un form data ----------------------------------------------------------------------------------------------
+//Cambiamos el metodo attemptAuthentication de JWTAuthenticationFilter.java:
+	@Override
+	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+			throws AuthenticationException {
+		
+		String username = obtainUsername(request);	//Nombre que tengamos en el entity Usuario
+		String password = obtainPassword(request);	// "" ""	
+		
+		//Debug
+		if (username != null && password != null) {
+			logger.info("Username desde request parameter (form-data):" + username);
+			logger.info("Password desde request parameter (form-data):" + password);
+		}else {		//Si enviamos en raw (JSon)
+			//Convertimos los datos que estamos recibiendo en el JSON raw a Objeto
+			Usuario user = null;
+			try {
+				user = new ObjectMapper().readValue(request.getInputStream(), Usuario.class);
+				
+				username = user.getUsername();
+				password = user.getPassword();
+				
+				logger.info("Username desde request InputStream (raw):" + username);
+				logger.info("Password desde request InputStream (raw):" + password);
+			} catch (StreamReadException e) {
+				e.printStackTrace();
+			} catch (DatabindException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		//Creamos el usernamePasswordAuthenticationTOken:
+		UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username, password);			
+				
+		return authenticationManager.authenticate(authToken);
+	}
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------  Manejando errores de autenticacion ------------------------------------------------------------------------------------------------------------
+//Añadimos el siguiente metodo en JWTAuthenticationFilter.java:
+	@Override
+	protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,
+			AuthenticationException failed) throws IOException, ServletException {
+		Map<String, Object> body = new HashMap<String, Object>();
+		body.put("mensaje", "Error de autenticacion: username o password incorrecto!");
+		body.put("error", failed.getMessage());
+		
+		response.getWriter().write(new ObjectMapper().writeValueAsString(body));
+		response.setStatus(401); 
+		response.setContentType("application/json");	
+	}
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+*************************************************
+   Crear el Filtro para Usar el Token Generado
+*************************************************
+---------------------------------------------------------------------- Crear clase para el filtro ya validado para verificar sus permisos ---------------------------------------------------------------------------------------------
+1º Creamos la clase JWTAuthorizationFilter:
+public class JWTAuthorizationFilter extends BasicAuthenticationFilter{
+
+	public JWTAuthorizationFilter(AuthenticationManager authenticationManager) {
+		super(authenticationManager);
+	}
+
+	@Override
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+			throws IOException, ServletException {
+		
+		
+		String header = request.getHeader("Authorization");
+		
+		if(!requiresAuthentication(header)) {
+			chain.doFilter(request, response);
+			return;
+		}
+		
+		//Validar el token
+		boolean validoToken;
+		Claims token = null;
+		try {
+		  token = Jwts		//Obtenemos el token que hemos generado previamente
+		    .parserBuilder().setSigningKey(JWTAuthenticationFilter.SECRET_KEY)
+		    .build()
+		    .parseClaimsJws(header.replace("Bearer ", "")).getBody();
+		  	validoToken = true;
+		}catch (JwtException | IllegalArgumentException e) {
+			validoToken = false;
+		}
+		
+		UsernamePasswordAuthenticationToken authentication = null;
+		
+		if(validoToken) {
+			String username = token.getSubject();	//Contenia el nombre del usuario en el otro filtro.
+			Object  roles = token.get("authorities");	//Los roles con el nombre que guardamos en el otro filtro de authentication.
+			//Los roles hay que transformarlos con la clase SimpleGrantedAuthoritiesMixin.java que hemos creado para poder hacerlo.
+			Collection<? extends GrantedAuthority> authorities = Arrays.asList(new ObjectMapper()
+					.addMixIn(SimpleGrantedAuthority.class, SimpleGrantedAuthoritiesMixin.class)
+					.readValue(roles.toString().getBytes(), SimpleGrantedAuthority[].class));
+			
+			authentication = new UsernamePasswordAuthenticationToken(username, null, authorities);	//NombreUser, password y roles.
+		}
+		
+		SecurityContextHolder.getContext().setAuthentication(authentication);
+		chain.doFilter(request, response);
+	}
+
+	protected boolean requiresAuthentication(String header) {
+		if(header == null || !header.startsWith("Bearer ")) {
+			return false;
+		}
+		return true;
+	}
+}
+
+2º Registramos el filtro -> .addFilter(new JWTAuthorizationFilter(authenticationManager()))
+
+3º Creamos la clase SimpleGrantedAuthoritiesMixin como clase abstracta para poder instanciar de forma correcta el objeto authority:
+public abstract class SimpleGrantedAuthoritiesMixin {
+
+	@JsonCreator
+	public SimpleGrantedAuthoritiesMixin(@JsonProperty("authority") String role) {
+	}
+
+}
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+/*
+Los token no se guardan en el servidor, si no que en el cliente, por eso se crea y se retorna al cliente para que este lo almacene en algún lugar, luego por cada petición o endpoind que queramos acceder necesitamos enviar el toke para que se valide y nos de el acceso.
+*/
+
+--------------------------------------------------------------------- Desacoplar codigo para que sea reutilizable, quitando codigo y creando la clase ServicioJWT --------------------------------------------------------------------------------------------------
+1º Creamos el package com.bolsadeideas.springboot.app.auth.service con la interfaz JWTService:
+	public interface JWTService {
+
+		public String create(Authentication auth);
+		
+		public boolean validate(String token);
+	
+		public Claims getClaims(String token);
+	
+		public String getUsername(String token);
+	
+		public Collection<? extends GrantedAuthority> getRoles(String token);
+	
+		public String resolve(String token);
+	}
+
+2º Creamos la clase JWTServiceImpl que implementa la interfaz JWTService:
+	@Component
+	public class JWTServiceImpl implements JWTService {
+
+		@Override
+		public String create(Authentication auth) throws JsonProcessingException {
+			//En este metodo la autenticacion ha salido bien por lo tanto creamos el token que vamos a retornar al usuario.
+			Collection<? extends GrantedAuthority> roles = auth.getAuthorities(); //Obtenemos los roles		
+			Claims claims = Jwts.claims();
+			claims.put("authorities", new ObjectMapper().writeValueAsString(roles));//Guardamos los roles en el JWT	
+					
+        		String token = Jwts.builder()
+        			.setClaims(claims)	//Contiene los roles
+                       		.setSubject(auth.getName())
+                       	 	.signWith(JWTAuthenticationFilter.SECRET_KEY)
+                      	  	.setIssuedAt(new Date())	//Fecha de creacion
+                   	     	.setExpiration(new Date(System.currentTimeMillis() + 14000000)) //Expira en 4 horas con + 14000000
+                	        .compact();
+			return token;
+		}
+
+		@Override
+		public boolean validate(String token) {
+			//Validar el token
+			Claims claims = null;
+			try {
+				getClaims(token);
+		  		return true;
+			}catch (JwtException | IllegalArgumentException e) {
+				return false;
+			}
+		}
+
+		@Override
+		public Claims getClaims(String token) {//Obtenemos el token que hemos generado previamente
+			Claims claims = Jwts		
+			    .parserBuilder().setSigningKey(JWTAuthenticationFilter.SECRET_KEY)
+			    .build()
+			    .parseClaimsJws(resolve(token)).getBody();
+			return claims;
+		}
+
+		@Override
+		public String getUsername(String token) {		
+			return getClaims(token).getSubject();
+		}
+
+		@Override
+		public Collection<? extends GrantedAuthority> getRoles(String token) throws StreamReadException, DatabindException, IOException {
+			Object roles = getClaims(token).get("authorities");
+		
+			//Los roles hay que transformarlos con la clase SimpleGrantedAuthoritiesMixin.java que hemos creado para poder hacerlo.
+			Collection<? extends GrantedAuthority> authorities = Arrays.asList(new ObjectMapper()
+				.addMixIn(SimpleGrantedAuthority.class, SimpleGrantedAuthoritiesMixin.class)
+				.readValue(roles.toString().getBytes(), SimpleGrantedAuthority[].class));
+		
+			return authorities;
+		}
+
+		@Override
+		public String resolve(String token) {
+			if(token != null && token.startsWith("Bearer ")) {
+			return token.replace("Bearer ", "");
+			}
+			return null;
+		}
+	
+	}
+
+
+3º CAMBIOS EN LAS CLASES:
+
+	- LA CLASE SpringSecutiryConfig.java:
+		//Inyecta la clase
+		@Autowired
+		private JWTService jwtService;
+
+		//Modifica estas lineas:
+		.addFilter(new JWTAuthenticationFilter(authenticationManager(), jwtService))
+		.addFilter(new JWTAuthorizationFilter(authenticationManager(), jwtService))
+
+	-La clase JWTAuthorizationFiler.java queda asi:
+		public class JWTAuthorizationFilter extends BasicAuthenticationFilter{
+	
+			private JWTService jwtService;
+	
+			public JWTAuthorizationFilter(AuthenticationManager authenticationManager, JWTService jwtService) {		
+				super(authenticationManager);
+				this.jwtService = jwtService;
+			}
+
+			@Override
+			protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+					throws IOException, ServletException {
+		
+		
+				String header = request.getHeader(JWTServiceImpl.HEADER_STRING);
+		
+				if(!requiresAuthentication(header)) {
+					chain.doFilter(request, response);
+					return;
+				}				
+		
+				UsernamePasswordAuthenticationToken authentication = null;
+		
+				if(jwtService.validate(header)) {
+					authentication = new UsernamePasswordAuthenticationToken(jwtService.getUsername(header), null, jwtService.getRoles(header));	//NombreUser, password y roles.
+				}
+		
+				SecurityContextHolder.getContext().setAuthentication(authentication);
+				chain.doFilter(request, response);
+			}
+
+			protected boolean requiresAuthentication(String header) {
+				if(header == null || !header.startsWith(JWTServiceImpl.TOKEN_PREFIX)) {
+					return false;
+				}
+				return true;
+			}
+		}
+	-La clase AuthenticationFiler.java queda asi:
+		public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilter{
+
+			private AuthenticationManager authenticationManager;
+			private JWTService jwtService;
+	
+	
+			public JWTAuthenticationFilter(AuthenticationManager authenticationManager, JWTService jwtService) {
+				this.authenticationManager = authenticationManager;	
+				this.jwtService = jwtService;
+				//setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher("/api/login", "POST"));	//Por si queremos personalizar rutas del login en vez de /login
+			}
+
+			@Override
+			public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+					throws AuthenticationException {
+		
+				String username = obtainUsername(request);	//Nombre que tengamos en el entity Usuario
+				String password = obtainPassword(request);	// "" ""	
+		
+				//Debug
+				if (username != null && password != null) {
+					logger.info("Username desde request parameter (form-data):" + username);
+					logger.info("Password desde request parameter (form-data):" + password);
+				}else {		//Si enviamos en raw (JSon)
+					//Convertimos los datos que estamos recibiendo en el JSON raw a Objeto
+					Usuario user = null;
+					try {
+						user = new ObjectMapper().readValue(request.getInputStream(), Usuario.class);
+				
+						username = user.getUsername();
+						password = user.getPassword();
+				
+						logger.info("Username desde request InputStream (raw):" + username);
+						logger.info("Password desde request InputStream (raw):" + password);
+					} catch (StreamReadException e) {
+						e.printStackTrace();
+					} catch (DatabindException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+		
+				//Creamos el usernamePasswordAuthenticationTOken:
+				UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username, password);			
+				
+				return authenticationManager.authenticate(authToken);
+			}
+
+			@Override
+			protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
+					Authentication authResult) throws IOException, ServletException {
+		
+				String token = jwtService.create(authResult);
+		
+				//Guardamos el token en la cabecera
+				response.addHeader(JWTServiceImpl.HEADER_STRING, JWTServiceImpl.TOKEN_PREFIX.concat(token));
+		
+				//Pasar el token a una structura JSON tb
+				Map<String, Object> body = new HashMap<String, Object>();
+				body.put("token", token);	//Pasamos el token
+				body.put("user", (User)authResult.getPrincipal());	//Pasamos el objeto user entero
+				body.put("mensaje", String.format("Hola %s, has iniciado sesion con exito", authResult.getName()));	//Pasamos un mensaje de exito
+		
+				//Guardamos el body en formato JSON en la respuesta  
+				response.getWriter().write(new ObjectMapper().writeValueAsString(body));//Convertimos el objeto de java en un JSON
+				response.setStatus(200); //Todo esta OK de estado
+				response.setContentType("application/json");		
+			}
+
+			@Override
+			protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,
+					AuthenticationException failed) throws IOException, ServletException {
+				Map<String, Object> body = new HashMap<String, Object>();
+				body.put("mensaje", "Error de autenticacion: username o password incorrecto!");
+				body.put("error", failed.getMessage());
+		
+				response.getWriter().write(new ObjectMapper().writeValueAsString(body));
+				response.setStatus(401); 
+				response.setContentType("application/json");	
+			}
+		
+}
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

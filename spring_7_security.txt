@@ -1,0 +1,443 @@
+----------------------------------------------------------------------- Introduccion ---------------------------------------------------------------------------------------------------------------------------------------
+//Ofrece autenticacion y autorizacion (ACL).
+https://www.thymeleaf.org/download.html
+1º Configuramos las dependencia en el pom.xml, dos la dependencia principal starter security y una con thymeleaf:
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.thymeleaf.extras</groupId>
+			<artifactId>thymeleaf-extras-springsecurity5</artifactId>
+		</dependency>
+
+2º A partir de este punto nos pedira iniciar sesion y debemos personalizar accesos roles y tal, para ellos creamos la clase de configuracion SpringSecurityConfig.
+
+//De primeras vamos a guardar los usuarios en memoria, luego los guardaremos con Jpa.
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------- Crear usuarios ---------------------------------------------------------------------------------------------------------------------------------
+4º Creamos los users:
+	@Configuration
+	public class SpringSecurityConfig extends WebSecurityConfigurerAdapter{
+	
+		@Bean		//Esto es para encryptar la password
+		public static BCryptPasswordEncoder passwordEncoder() {
+			return new BCryptPasswordEncoder();
+		}
+	
+		@Autowired
+		public void configurerGlobal(AuthenticationManagerBuilder builder) throws Exception{
+			PasswordEncoder encoder = passwordEncoder();
+			UserBuilder users = User.builder().passwordEncoder(encoder::encode);
+		
+			//Creamos los usuarios con la siguiente lineas usando el builder de user y creamos con .withUser(), dandole username, password y roles
+			builder.inMemoryAuthentication()
+			.withUser(users.username("admin").password("12345").roles("ADMIN", "USER"))
+			.withUser(users.username("andres").password("12345").roles("USER"))
+			;
+		
+		
+		}
+	}
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------- Reglas ACL para las peticiones HTTP ---------------------------------------------------------------------------------------------------------------------------------
+//Implementamos un nuevo metodo para las peticiones http, para dar seguridad a toda la pagina, por ejemplo para el crud, form, eliminar...
+1º Implementamos un metodo en la clase de SpringSecurityConfig para permitir acceso a las rutas:
+	@Override
+	protected void configure(HttpSecurity http) throws Exception {
+		//Asignamos nuestras rutas para permitir el acceso publico o restringirlo
+		http.authorizeRequests()
+		.antMatchers("/", "/css/***", "/js/***", "/images/**", "/listar").permitAll()	//Las permitimos a todos
+		.antMatchers("/ver/**", "uploads/**").hasAnyRole("USER")	//Permitimos a cualquiera con el rol User
+		.antMatchers("/form/**", "/eliminar/**", "/factura/**").hasAnyRole("ADMIN")
+		.anyRequest().authenticated()
+		;
+	}
+
+//Devolveremos al formulario de login en vez de mostrar el error de acceso denegado.	
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------------- Formulario de Login --------------------------------------------------------------------------------------------------------------------------
+//Viene por defecto con la libreria, pero se puede modificar.
+//Evitamos que salga acceso denegado permitiendo el acceso al login y logout.
+//Spring de forma automatica con este formulario implementa CSRF para bloquear inyeccion de codigo.
+1º Permitimos el acceso al formulario de login y logout modificando el metodo de configure(HttpSecurity http)... del ejercicio anterior, añadiendo a partir del and (incluido):
+		.anyRequest().authenticated()
+		.and()
+		.formLogin().permitAll()
+		.and()
+		.logout().permitAll()
+		;
+
+2º Personalizar formulario login.
+	2a: En el controlador que crearemos LoginController mapeamos al login y controlamos si ha iniciado sesision para que no vuelva a iniciarla:
+		@GetMapping("/login")
+		public String login(Model model, Principal principal, RedirectAttributes flash) { 		//Principal es de java Security, si principal es distinto de null ya habia iniciado sesion, entonces redirigimos.
+		
+			if(principal != null) {//Para evitar doble login
+				flash.addFlashAttribute("info", "Ya ha iniciado sesion");
+				return "redirect:/";
+			}		
+			return "login";
+		}
+	2b: Añadimos en la configuracion en form login el loginPage con la ruta que acabamos de poner:
+		http.authorizeRequests()
+		.antMatchers("/", "/css/***", "/js/***", "/images/**", "/listar").permitAll()	//Las permitimos a todos
+		.antMatchers("/ver/**", "uploads/**").hasAnyRole("USER")	//Permitimos a cualquiera con el rol User
+		.antMatchers("/form/**", "/eliminar/**", "/factura/**").hasAnyRole("ADMIN")
+		.anyRequest().authenticated()
+		.and()
+		.formLogin().loginPage("/login").permitAll()
+		.and()
+		.logout().permitAll()
+		;
+	2b: Implementamos la vista login personalizado login.html, con el formulario y el action de este tiene que apuntar a login con un metodo de envio POST el filtro de spring security se encarga de capturar todos esos datos y realizar la autenticacion:
+		<!DOCTYPE html>
+		<html xmlns:th="http://www.thymeleaf.org">
+		<head th:replace="layout/layout :: head"></head>
+			<body>
+
+				<header th:replace="layout/layout :: header"></header>
+		
+				<div class="container py-4">
+	
+					<div class="card border-primary text-center">
+						<div class="card-header">Por favor Inicie Sesion</div>
+						<div class="card-body">
+							<form th:action="@{/login}" method="post">
+								<div class="form-group col-sm-6">						
+									<input type="text" name="username" id="username" class="form-control" placeholder="UserName" autofocus required/>
+								</div>
+						
+								<div class="form-group col-sm-6">						
+									<input type="password" name="password" id="password" class="form-control" placeholder="Password" required/>
+								</div>
+						
+								<div class="form-group col-sm-6">						
+									<input type="submit" class="btn btn-lg btn-primary tbn-block" value="Iniciar Sesion"/>
+								</div>
+						
+							</form>
+						</div>
+					</div>
+		
+				</div>
+
+				<footer th:replace="layout/layout :: footer"></footer>
+			</body>
+		</html>
+	//AUTOMATICAMENTE AL LLAMARSE login.html CARGA ESTE HTML COMO EL LOGIN HTML y modifica el otro por defecto, porque tenemos implementado el controlador y con el .formLogin().loginPage en el configurador lo hemos mapeado
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------ Manejo de errores en el formulario login-----------------------------------------------------------------------------------------------------------------------------
+//Al logear de forma incorrecta mostrarlo:
+	1º Modificamos el loginController el metodo de /login:
+		@GetMapping("/login")
+		public String login(@RequestParam(value="error", required=false) String error, Model model, Principal principal, RedirectAttributes flash) { 		//Principal es de java Security, si principal es distinto de null ya habia iniciado sesion, entonces redirigimos.
+		
+			if(principal != null) {//Para evitar doble login
+				flash.addFlashAttribute("info", "Ya ha iniciado sesion");
+				return "redirect:/";
+			}		
+		
+			if(error != null) {
+				model.addAttribute("error", "Error en el login: Nombre de usuario o contraseña incorrecta, por favor vuelva a intentarlo");
+			}
+			return "login";
+		}
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------- Manejo de errores de acceso denegado AccessDeniedPage ------------------------------------------------------------------------------------------------------
+//Para cambiar como se ve la pagina 403
+1º Agregamos el siguiente metodo a la clase controladora de @Configuration:
+	public void addViewControllers(ViewControllerRegistry registry) {
+		registry.addViewController("/error_403").setViewName("error403");
+	}
+
+2º Creamos la vista y añadimos lo siguiente en el fichero de configuracion de seguridad donde damos acceso a las rutas, sin contar la primera linea que sale:
+	.logout().permitAll()
+	.and()
+	.exceptionHandling().accessDeniedPage("/error_403")
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------- Seguridad en vistas, ocultar componentes segun los permisos ----------------------------------------------------------------------------------------------
+//En spring con spring security podemos preguntar en los componentes si tiene x rol para que lo muestre con sec:authorize="hasRole...:
+//en el <html tenemos que meter xmlns:sec="http://thymeleaf.org/extras/spring-security"
+	<a sec:authorize="hasRole('ROLE_ADMIN')" th:href="@{/form}" class="btn btn-success btn-xs">Crear Cliente</a>
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------ Obtener el usuario autenticado en el controlador ------------------------------------------------------------------------------------------------------------
+//Ponemos en el metodo como parametro Authentication y lo usamos:
+	@GetMapping({"/listar","/"}) // Pasamos el listado de clientes a la vista
+	public String listar(@RequestParam(name = "page", defaultValue = "0") int page, Model model, Authentication authentication) {
+		
+		if(authentication != null) {
+			logger.info("Hola usuario autenticado, tu username es:".concat(authentication.getName()));
+		}
+
+//ALTERNATIVA -> En vez de pasarlo como parametro en el metodo podemos hacerlo de una clase statica y luego lo del if seria igual:
+	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+//Loger podemos usarlo si ponemos esto arriba -> protected final Log logger = LogFactory.getLog(this.getClass());
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------- Obtener roles en el controlador ----------------------------------------------------------------------------------------------------------------------
+//Hay una forma mas simple, ver !!!!!!-------------------------------------------!!!!!!!!
+//Ver si pertenece a un rol el usuario y si tiene acceso a x recurso.
+	private boolean hasRole(String role) {					//RETORNA TRUE SI EL ROL QUE PONEMOS POR STRING ES IGUAL AL QUE TIENE
+		SecurityContext context = SecurityContextHolder.getContext();
+		
+		if(context == null) {
+			return false;
+		}
+		
+		Authentication auth = context.getAuthentication();
+		
+		if(auth == null) {
+			return false;
+		}
+		
+		Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
+		
+		for(GrantedAuthority authority: authorities) {
+			if(role.equals(authority.getAuthority())) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+
+//Ejemplo de uso:
+	if(hasRole("ROLE_ADMIN")) {
+		logger.info("Hola ".concat(authentication.getName()).concat(" tienes acceso!"));
+	}else {
+		logger.info("Hola ".concat(authentication.getName()).concat(" NO tienes acceso!"));
+	}
+!!!!!!-------------------------------------------!!!!!!!!
+//Forma más simple de chequear si el rol pertenece al usuario, MUCHISIMO MAS FACIL UFF
+
+1º HttpServletRequest request en el metodo del controlador, tipo Model model, pues al lao.
+2º En el metodo:
+	SecurityContextHolderAwareRequestWrapper securityContext = new SecurityContextHolderAwareRequestWrapper(request, "ROLE_");
+		if(securityContext.isUserInRole("ADMIN")){
+			logger.info("Hola ".concat(authentication.getName()).concat(" tienes acceso!"));
+		}else {
+			logger.info("Hola ".concat(authentication.getName()).concat(" NO tienes acceso!"));
+		}
+/OO otra forma
+3º Saltamos el paso dos y solo hacemos esto:
+	if(request.isUserInRole("ROLE_ADMIN")){
+			logger.info("Hola ".concat(authentication.getName()).concat(" tienes acceso!"));
+		}else {
+			logger.info("Hola ".concat(authentication.getName()).concat(" NO tienes acceso!"));
+		}
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------- Dar seguridad en el controlador en las rutas usando anotaciones----------------------------------------------------------------------------------------------------------------------
+//En vez del metodo de configure(HttpSecurity ... de la clase SpringSecurityConfig.java podemos hacerlo mediante anotaciones.
+1º Con la notacion @Secured y el rol.
+	@Secured("ROLE_ADMIN")
+	@GetMapping("/form")
+	public String crear(Model model) {
+
+2º En la clase de SecutiryConfig que tengamos tenemos que poner la anotacion para habilitar esto:
+	@EnableGlobalMethodSecurity(securedEnabled = true)
+	@Configuration
+	public class SpringSecurityConfig extends WebSecurityConfigurerAdapter{
+
+3º PODEMOS ANOTAR TB EN LA CLASE ENTERA DEL CONTROLADOR PARA QUE HAGA EFECTO EN TODOS SUS METODOS!!!!!!!!!!!!!
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------- Spring Security utilizando JPA ----------------------------------------------------------------------------------------------------------------------------------------------------
+//Implementar Security con persistencia utilizando Jpa.
+
+1º Crear las clases entitys mapeadas a tablas para el usuario y para el rol.
+	//////////CLASE USUARIO ENTITY
+@Entity
+@Table(name = "users")
+public class Usuario implements Serializable {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@Column(length = 30, unique = true) // Indicamos que es unico en la tabla
+	private String username;
+
+	@Column(length = 60)		//Longitud del varchar
+	private String password;
+
+	private Boolean enabled;
+
+	@OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	@JoinColumn(name="user_id")	//Le crea la llave foranea en rol
+	private List<Rol> roles;
+
+	private static final long serialVersionUID = 1L;
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	public Boolean getEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(Boolean enabled) {
+		this.enabled = enabled;
+	}
+
+	public List<Rol> getRoles() {
+		return roles;
+	}
+
+	public void setRoles(List<Rol> roles) {
+		this.roles = roles;
+	}
+}
+			///////////////CLASE ROL ENTITY
+@Entity
+@Table(name="authorities", uniqueConstraints= {@UniqueConstraint(columnNames = {"user_id", "authority"})})	//Son valores unicos
+public class Rol implements Serializable{
+
+	@Id
+	@GeneratedValue(strategy=GenerationType.IDENTITY)
+	private Long id;
+	
+	private String authority;
+	
+	private static final long serialVersionUID = 1L;
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public String getAuthority() {
+		return authority;
+	}
+
+	public void setAuthority(String authority) {
+		this.authority = authority;
+	}	
+}
+
+2º Creamos el @Repository para el usuario:
+	public interface IUsuarioDao extends CrudRepository<Usuario, Long>{
+		public Usuario findByUsername(String username);
+		}
+	}
+
+3º Creamos el service/provider JpaUserDetailsService, en este caso no debemos crear una interfaz propia ya que la interfaz ya que la interfaz la provee spring security propia para trabajar con jpa para implementar el proceso de authenticacion..., asi que implementamos esa suya.
+	@Service("jpaUserDetailService")
+	public class JpaUserDetailsService implements UserDetailsService{
+
+		//Inyectamos la clase dao
+		@Autowired
+		private IUsuarioDao usuarioDao;	
+	
+		private Logger logger = LoggerFactory.getLogger(JpaUserDetailsService.class);
+	
+		@Override
+		@Transactional(readOnly = true)
+		public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {	//Este metodo carga el usuario a traves del username
+			//Obtenemos el usuario
+			Usuario usuario = usuarioDao.findByUsername(username);				
+		
+			if(usuario == null) {
+				logger.error("Error login: no existe el usuario: " + username);
+				throw new UsernameNotFoundException("Username " + username + " no existe en el sistema!");
+			}
+		
+			//Obtenemos sus roles
+			List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();		//GrantedAuthority es del tipo abstracto dnd estan los roles?¿
+		
+			for(Rol role: usuario.getRoles()) {
+				logger.info("Role: ".concat(role.getAuthority()));
+				authorities.add(new SimpleGrantedAuthority(role.getAuthority()));
+			}
+		
+			if(authorities.isEmpty()) {
+				logger.error("Error login: " +  username +  " no tiene roles asignados!");
+				throw new UsernameNotFoundException("Error login: " +  username +  " no tiene roles asignados!");
+			}
+		
+			return new User(usuario.getUsername(), usuario.getPassword(), usuario.getEnabled(), true, true, true, authorities);
+		}
+	
+	}
+
+4º Implementamos la configuracion de spring security con Jpa tocando el archivo Spring SecurityConfig.java:
+	//Inyectamos la clase del punto anterior:
+	@Autowired
+	private JpaUserDetailsService userDetailsService;
+
+	//Ponemos el siguiente metodo:
+	@Autowired
+	public void configurerGlobal(AuthenticationManagerBuilder builder) throws Exception{
+		builder.userDetailsService(userDetailsService)
+		.passwordEncoder(passwordEncoder);
+	}
+
+//Los datos de los usuarios y roles han de estar en la base de datos ya, las claves tenemos que encriptarlas, por ejemplo podemos encriptarlas asi con lo de password encoder, en la clase principal de el proyecto:
+@SpringBootApplication
+public class SpringBootDataJpaApplication implements CommandLineRunner{
+
+	@Autowired
+	private BCryptPasswordEncoder passwordEncoder;
+	
+	public static void main(String[] args) {
+		SpringApplication.run(SpringBootDataJpaApplication.class, args);
+	}
+
+	@Override
+	public void run(String... args) throws Exception {
+		String password = "12345";
+		
+		for(int i=0; i <2; i++) {
+			String bcryptPassword = passwordEncoder.encode(password);
+			System.out.println(bcryptPassword);
+		}
+	}
+}
+//La clase principal la hemos puesto con el implement, despues de encryptar podemos quitarlo eso y el metodo run.
+//Lo ejecutamos y en la consola nos pone la contraseña encryptada ya que estamos usando ese metodo de verificacion de contraseñas y necesitamos que este encriptada, una vez metida a la bd no  necesitamos este metodo, y una contraseña igual puede salir de maneras distintas encriptada.
+//NOTA -> private BCryptPasswordEncoder passwordEncoder; -> Esto sale de otra clase de configuracion de un metodo y esta inyectado:
+	@Bean		//Esto es para encryptar la password
+	public static BCryptPasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
+
+//Ejemplo de contraseña encrpytada con ese algoritmo:
+	$2a$10$mCIUbsAhPmKoobF.38FHNuJAumnYtOnA7UNg5Lmm2vvqxp63Y/4ky
+//Lo suyo seria hacer un metodo para ir encriptando la contraseña que metamos como string y que la inserte encryptada en la bd para siempre.
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

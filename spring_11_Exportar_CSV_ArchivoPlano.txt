@@ -1,0 +1,56 @@
+http://super-csv.github.io/super-csv/index.html
+
+1º Dependencia:
+	<dependency>
+    		<groupId>net.sf.supercsv</groupId>
+    		<artifactId>super-csv</artifactId>
+    		<version>2.4.0</version>
+	</dependency>
+
+//El archivo plano se suele usar para listar elementos, en este ejemplo el listado de clientes.
+
+2º Vista -> package view.csv y clase ClienteCsvView:
+	@Component("listar")
+	public class ClienteCsvView extends AbstractView{
+
+	
+	
+		public ClienteCsvView() {
+			setContentType("text/csv");
+		}
+
+		@Override
+		protected boolean generatesDownloadContent() {
+			return true;
+		}
+
+		@Override
+		protected void renderMergedOutputModel(Map<String, Object> model, HttpServletRequest request,
+				HttpServletResponse response) throws Exception {
+			response.setHeader("Content-Disposition", "attachment; filename=\"clientes.csv\"");
+			response.setContentType(getContentType());
+					
+			@SuppressWarnings("unchecked")
+			Page<Cliente> clientes = (Page<Cliente>) model.get("clientes"); //Esto con el entity del que queramos hacer la lista
+			
+			ICsvBeanWriter beanWriter = new CsvBeanWriter( response.getWriter(),
+               	 CsvPreference.STANDARD_PREFERENCE);
+		
+			//Tocamos a partir de aqui
+			String[] header = {"id", "nombre", "apellido", "email", "createAt"};
+			beanWriter.writeHeader(header);
+		
+			for(Cliente cliente: clientes) {
+				beanWriter.write(cliente, header);
+			}
+			beanWriter.close();
+		}
+		
+	}
+
+3º Creamos el link:
+	<a class="btn btn-success btn-xs float-right" th:href="@{'/listar'(format=csv)}">CSV</a>	
+
+4º Lo usamos por ejemplo abriendo un excel y en datos, desde un archivo de texto seleccionamos coma, quitamos tab y le damos a finalizar y aceptar.
+
+5º Si tuviesemos algun uso más en esa vista de diferentes vistas con el mismo nombre y necesitasemos usar listar.csv deberiamos de añadir esto al .properties -> spring.mvc.contentnegotiation.media-types.csv=text/csv

@@ -1,0 +1,46 @@
+//Segunda forma para implementar api rest 
+
+-----------------------------------------@ResponseBody-----------------------------------------------------
+//Con esto en vez de una vista como el punto anterior, se hace mediante un metodo handler en un controlador para renderizar una vista del tipo REST, JSon o XML SOLO.
+//En el metodo debemos retornar un entity del que queramos desplegar sus atributos en formato JSon o XML:
+//Lo anotamos con @ResponseBody que significa que el listado cliente en este caso se va a almacenar en el cuerpo de la respuesta.
+
+1º El metodo: 
+	@GetMapping("/listar-rest")
+		public @ResponseBody List<Cliente> listarRest() {		//Va a responder en formato Rest	
+			return clienteService.findAll();
+		}
+//Esto hay que hacer las anotaciones del punto spring_13 de los otros metodos
+
+//!!!!!!!!!!!Si queremos xml tenemos que hacer lo mismo pero incluyendo en el metodo del controlador en el return la clase wrapper, recordemos que necesitaba esa clase.
+	@GetMapping("/listar-rest")
+	public @ResponseBody ClienteList listarRest() {		//Va a responder en formato Rest	
+		return new ClienteList(clienteService.findAll());
+	}
+
+
+//Podemos indicar que lo queremos en formato xml de la siguiente manera con la misma ruta.
+http://localhost:8080/listar-rest?format=xml
+http://localhost:8080/listar-rest?format=json
+------------------------------------------------------------------------------------------------------------
+
+//Tercera forma para implementar api rest
+
+---------------------------------------------------------------------------------------------Rest Controller -------------------------------------------------------------------------------------
+//Con la clase @RestController la cual es una clase controladora dedicada a API REST. Todos sus metodos van a responder a metodos handler tipo @Rest.
+
+1º Creamos ClienteRestController.
+	@RestController
+	@RequestMapping("/api/clientes")
+	public class ClienteRestController {
+	
+		@Autowired
+		private IClienteService clienteService;
+	
+		@GetMapping("/listar")
+		public ClienteList listarRestControl() {		//Va a responder en formato Rest	
+			return new ClienteList(clienteService.findAll());
+		}
+	
+	}
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

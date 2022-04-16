@@ -1,0 +1,68 @@
+1º----------------------------------------------------------------------------- Configuracion ---------------------------------------------------------------------------
+ //En MvcConfig.java o en un archivo de configuración, hay que implementar el @Bean Locale resolve el cual es el adaptador donde vamos a guardar nuestro locale y el interceptor que es un locale change que se encarga de cambiar el locale: 
+	@Bean
+	public LocaleResolver localeResolver(){//Importamos LocaleResolver de spring.webserlet
+			SessionLocaleResolver localeResolver = new SessionLocaleResolver();		//Se guarda en la session http
+			//Establecemos el lenguaje por defecto
+			localeResolver.setDefaultLocale(new Locale("es", "ES"));	//Primero el codigo del lenguaje y segundo el codigo del pais
+			return localeResolver;
+	}
+	
+	//Creamos el interceptor para cambiar el locale, cada vez que pasemos el parametro lang por URL
+	@Bean
+	public LocaleChangeInterceptor localeChangeInterceptor() {
+		LocaleChangeInterceptor localeInterceptor = new LocaleChangeInterceptor();
+		localeInterceptor.setParamName("lang");	//Cada vez que se pase este parametro por URL se va a ejecutar este interceptor
+		return localeInterceptor;
+	}
+
+	//Tenemos que agregar el interceptor, registrarlo vaya
+	@Override
+	public void addInterceptors(InterceptorRegistry registry) {
+		registry.addInterceptor(localeChangeInterceptor());
+	}
+
+2º Creamos los archivos de idioma, los cuales son los traductores que permiten cambiar el idioma de nuestro sitio, vamos a tener un messages.properties por cada idioma de nuestro sitio:
+	2aº Creamos messages_es.properties en resources, con new general file.
+	2bº Contenido de ejemplo de uno de ellos en Españoly en Ingles
+		text.cliente.nombre = Nombre		 	text.cliente.nombre = Name
+		text.cliente.apellido = Apellido		text.cliente.apellido = Last Name
+		text.cliente.email = Correo			text.cliente.email = Email
+		text.cliente.fecha = Fecha creación		text.cliente.fecha = Create Date
+	
+3º Usamos los string de estos archivos:
+	<th sec:authorize="hasRole('ROLE_USER')">Id</th>
+	<th th:text="#{text.cliente.nombre}"></th>
+	<th th:text="#{text.cliente.apellido}"></th>
+	<th th:text="#{text.cliente.email}"></th>
+	<th th:text="#{text.cliente.fecha}"></th>
+
+4º Crear links para poder cambiar el idioma, el parametro de lang es el mismo que hemos puesto en el fichero de configuracion dsegudo del codigo del idioma_codigopais:
+	<a class="btn btn-outline-primary dropdown-toggle" href ="?lang=es_ES">ES</a>
+	<a class="btn btn-outline-primary dropdown-toggle" href ="?lang=en_US">EN</a>
+	<a class="btn btn-outline-primary dropdown-toggle" href ="?lang=de_DE">DE</a>
+
+//NOTA hay que tener el message.properties por defecto creado y quitar espacios.
+
+//!!!!!!!!!!!!!!_-----------------------------------------------------!!!!!!!!!!!!!!!!!!!!!!!!!!! MEJOR FORMA
+//De esta forma no mantenemos los parametros en la url y por ejemplo si estamos en el paginador y cambiamos el idioma perdimos el parametro de donde estabamos en el paginador, la idea es crear un controlador que se encarge de esta situacion, obteniendo la ultima url en la que estabamos y redirigir de regrreso a dnd estabamos
+1º Creamos el LocaleController:
+	@Controller
+	public class LocaleController {
+	
+		@GetMapping("/locale")
+		public String locale(HttpServletRequest request) {
+			String ultimaUrl = request.getHeader("referer");	//Nos entrega el link de nuestra ultima pagina, con referer
+		
+			return "redirect:".concat(ultimaUrl);
+		}
+	
+	}
+
+2º El siguiente paso es ir al layout para modificar la ruta, ahora no solo pasamos el parametro a secas si no que tenemos una ruta con el controlador, la ruta que teniamos más la ruta del cambio de idioma:
+	<li class="btn btn-outline-success"><a class="btn btn-outline-primary dropdown-toggle" th:href ="@{/locale(lang=es_ES)}">ES</a></li>
+	<li class="btn btn-outline-success"><a class="btn btn-outline-primary dropdown-toggle" th:href ="@{/locale(lang=en_US)}">EN</a></li>
+	<li class="btn btn-outline-success"><a class="btn btn-outline-primary dropdown-toggle" th:href ="@{/locale(lang=de_DE)}">DE</a></li>
+
+
+/Si queremos traducir lo que pasamos en los controladores ver video 221.

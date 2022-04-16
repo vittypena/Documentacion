@@ -1,0 +1,64 @@
+----------------------------------------------------------- Crear la clase View CLienteListJSonView-----------------------------------------------------------------
+/Se utiliza mucho en android, front end, es la formacon la que se trabaja los arreglos listas  en javascript.
+
+//En springboot la implementacion es automatica es decir no hay que incluir dependencias.
+//En JSon no necesitamos tener una clase wrapper.
+
+1º Creamos el package com.bolsadeideas.springboot.app.view.json y  la clase ClienteListJsonView:
+	@Component("listar.json")
+	public class ClienteListJsonView extends MappingJackson2JsonView{
+
+		@Override
+		protected Object filterModel(Map<String, Object> model) {	//Para poder quitar algunos elementos del model que pasamos a la vista, como el titulo y page, que no interesa serializar.
+			model.remove("titulo");
+			model.remove("page");
+			
+			Page<Cliente> clientes = (Page<Cliente>) model.get("clientes");		
+			model.remove("clientes");
+			model.put("clientes", clientes.getContent());
+			return super.filterModel(model);
+		}
+	
+	}
+
+2º Añadimos el link:
+	<a class="btn btn-outline-warning btn-xs float-right" th:href="@{'/listar'(format=json)}">JSON</a>	
+
+3º La relaccion es bidireccional, ya que el cliente contiene facturas pero cada factura tiene un cliente entonces es un loop infinito. Entonces hay que cortarlo a la hora de serializar, para ello:
+	//En el cliente marcamos facturas con @JSonIgnore
+	@OneToMany(mappedBy="cliente",fetch=FetchType.LAZY, cascade=CascadeType.ALL)
+	//@JsonIgnore Se quita porque esto no lo soluciona.
+	private List<Factura> facturas;
+
+4º Añadimos la extension al navegador para que se vea chachi el Json y no todo en una linea -> https://chrome.google.com/webstore/detail/json-formatter/bcjindcccaagfpapjjmafapmmgkkhgoa?hl=es
+
+5º En este punto solo se serializa el cliente y no la factura del cliente. Para serializarlas tb:
+	//Quitamos el @JsonIgnore, queremos mostrar la relacion pero solo en el sentido unidirecional, ponemos la siguiente anotacion en cliente en sus facturas:
+		@OneToMany(mappedBy="cliente",fetch=FetchType.LAZY, cascade=CascadeType.ALL)
+		@JsonManagedReference
+		private List<Factura> facturas;
+6º En factura, que es la contraparte de la relacion que no queremos serializar ponemos la siguiente anotacion @JsonBackReference, ya que queremos volver del bucle infinito:
+	@ManyToOne(fetch=FetchType.LAZY)
+	@JsonBackReference
+	private Cliente cliente;
+
+7º Esto nos da un problema relacionado con la carga perezona LAZY al serializar a Json, para solucionarlo ->
+	//Factura tiene producto y esta con lazy entonces tenemos que cambiarlo a EAGER, para que traiga los productos inmediatamente:
+	@ManyToOne(fetch=FetchType.EAGER)		
+	private Producto producto;
+
+8º Esto es poco practico, pero como las facturas siempre van a mostrar los productos es aceptable, aun asi lo vamos a dejar en LAZY y lo vamos a solucionar de otra forma, lo volvemos  acambiar a LAZY.
+
+9º Añadimos a cambio la anotacion @JsonIgnoreProperties al producto de item facturas e ignoramos los dos atributos que nos daban problemas, puede ir en el item o sobre la clase producto:
+	@ManyToOne(fetch=FetchType.LAZY)		
+	@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+	private Producto producto;
+
+
+10º Formatear fecha en el JSON para que no salga asi -> "createAt": 1501538400000, con @JsonFormat en el atributo de fecha:
+	@Column(name = "create_at")
+	@Temporal(TemporalType.DATE) // Para dar formato al campo fecha en la tabla
+	@DateTimeFormat(pattern = "yyyy-MM-d")
+	@JsonFormat(pattern="yyyy-MM-d HH:mm:ss")
+	private Date createAt;
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------

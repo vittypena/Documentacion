@@ -1,0 +1,123 @@
+//Exportar a pdf complementandolo con el sistema multilenguaje:
+------------------------------------------------------------- Configuraciones necesarias y dependencias de OpenPDF ---------------------------------------------------------------------------------------------------------
+1º Lo suyo es mirar aqui que version de OPEN PDF Recomienda: https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-view-document-intro
+Copiar la dependencia de maven de aqui: https://github.com/LibrePDF/OpenPDF
+Cambiar la version a la que recomendaba en la primera pagina de spring y añadirlo al pom.xml
+	<dependency>
+		<groupId>com.github.librepdf</groupId>
+		<artifactId>openpdf</artifactId>
+		<version>1.2.12</version>
+	</dependency>
+
+2º Configurar en application.properties para que soporte el media types para pdf, añadiendo las siguientes lineas:
+	spring.mvc.contentnegotiation.favor-parameter=true
+	spring.mvc.contentnegotiation.media-types.pdf=application/pdf
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------- Como crear una vista en PDF --------------------------------------------------------------------------------------------
+Hay que implementar la clase abstract PDF View, que nos propone una implementacion, un metodo para construir nuestro documento pdf, le tenemos que dar un nombre que a su vez va a corresponder con el nombre de la vista.
+
+//Pagina con docu de crear PDF https://kb.itextpdf.com/home/it5kb/examples
+
+1º Creamos el package com.bolsadeideas.springboot.app.view.pdf y la clase FacturaPdfView.
+
+//Ejemplo del metodo del controlador que renderizaba en html y ahora va  aser usado para pdf, recordemos que es el mismo, el solo retorna los datos a esa ruta, si en la ruta hay un html se mostrara y si hay un pdf tb, contenido:
+	@Autowired
+	private MessageSource messageSource;
+
+	@GetMapping("/ver/{id}")
+	public String ver(@PathVariable(value = "id") Long id, Model model, RedirectAttributes flash, Locale locale) {
+
+		Factura factura = clienteService.fetchFacturaByIdWithClienteWhithItemFacturaWithProducto(id); // clienteService.findFacturaById(id);
+
+		if (factura == null) {
+			flash.addFlashAttribute("error", messageSource.getMessage("text.factura.flash.db.error", null, locale));
+			return "redirect:/listar";
+		}
+
+		model.addAttribute("factura", factura);
+		model.addAttribute("titulo", String.format(messageSource.getMessage("text.factura.ver.titulo", null, locale), factura.getDescripcion()));
+		return "factura/ver";
+	}
+//Automaticamente con el format en la url de la vista dnd pongamos el link le va a indicar que puede ser un pdf o un html o lo que sea, si no tuviesemos los string con string format pasados por defecto seria el destino un html.
+2º Anotamos la clase con component para que sea un @Beans de spring y en el component le ponemos el nombre por el que va a responder la ruta del pdf, que estara mapeada en un controlador y extiende de la clase AbstractPdfView co sus metodos:
+	@Component("factura/ver")
+	public class FacturaPdfView extends AbstractPdfView{
+
+		@Override
+		protected void buildPdfDocument(Map<String, Object> model, Document document, PdfWriter writer,
+				HttpServletRequest request, HttpServletResponse response) throws Exception {
+			//Obtenemos la factura que le hemos pasado desde el controlador con Model, aqui se guarda como Object, por lo tanto hacemos un cast.
+			Factura factura = (Factura)model.get("factura");
+		
+			//Hay que replicar lo que teniamos el HTMl, tablas y tal
+			PdfPTable tabla = new PdfPTable(1);	//Una sola columna
+			tabla.setSpacingAfter(20);	//Dar un espacio
+		
+			PdfPCell cell = null;	//Para customizar una celda lo hacemos asi, sin añadir con addCell directamente el valor
+			cell= new PdfPCell(new Phrase("Datos del Cliente"));
+			cell.setBackgroundColor(new Color(184, 218, 255));
+			cell.setPadding(8f);	//8f de float
+			tabla.addCell(cell);
+		
+		
+			tabla.addCell(factura.getCliente().getNombre() + " " + factura.getCliente().getApellido());
+			tabla.addCell(factura.getCliente().getEmail());
+		
+			PdfPTable tabla2 = new PdfPTable(1);
+			tabla2.setSpacingAfter(20);
+				
+			cell= new PdfPCell(new Phrase("Datos de la Factura"));
+			cell.setBackgroundColor(new Color(195, 230, 203));
+			cell.setPadding(8f);	//8f de float
+			tabla2.addCell(cell);
+		
+			tabla2.addCell("Folio: " + factura.getId());
+			tabla2.addCell("Descripción: " + factura.getDescripcion());
+			tabla2.addCell("Fecha: " + factura.getCreateAt());
+		
+			//Guardar estas tablas en el documento pdf
+			document.add(tabla);
+			document.add(tabla2);
+		
+		
+			//Header de la 3 tabla
+			PdfPTable tabla3 = new PdfPTable(4);	//Manejamos el item
+			tabla3.setWidths(new float[] {3.5f, 1, 1, 1});	//Cambiar el ancho
+			tabla3.addCell("Producto");
+			tabla3.addCell("Precio");
+			tabla3.addCell("Cantidad");
+			tabla3.addCell("Total");
+		
+			//Recorremos por cada item, para los campos de la 3 tabla
+			for(ItemFactura item: factura.getItems()) {
+				tabla3.addCell(item.getProducto().getNombre());
+				tabla3.addCell(item.getProducto().getPrecio().toString());
+			
+				cell = new PdfPCell(new Phrase(item.getCantidad().toString()));
+				cell.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+				tabla3.addCell(cell);
+			
+				tabla3.addCell(item.calcularImporte().toString());
+			}
+		
+			//Footer de la 3ra tabla
+			cell = new PdfPCell(new Phrase("Total: "));	//Agregamos nueva celda, le damos un hueco de 3 y lo alinamos a la derecha
+			cell.setColspan(3);
+			cell.setHorizontalAlignment(PdfPCell.ALIGN_RIGHT);
+			tabla3.addCell(cell);
+			tabla3.addCell(factura.getTotal().toString());
+		
+			document.add(tabla3);
+		}
+
+	}
+
+3º Creamos link para generar la factura pdf:
+	<a class="btn btn-danger btn-xs float-right" th:href="@{'/factura/ver/'} + ${factura.id}(format=pdf)}">PDF</a>
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-------------------------------------------------------------------- Traducir el PDF con Locale -------------------------------------------------------------------------------
+5º Cambiar idioma con -> MessageSourceAccessor mensajes = getMessageSourceAccesor(); y para usarlo con mensajes.getMessage("text.factura.ver.datos.cliente"))); como lo tengamos en el message.properties
+Video 232
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
