@@ -1,0 +1,36 @@
+//Con postman podemos testear apis.
+
+---------------------------------------------------------------------------------------------------- Conectar Angular con Spring ----------------------------------------------------------------
+1º Anotamos en el controler de api con @CrossOrigin(origins = {"http://localhost:4200"}).
+
+2º En angular en app.module.ts:
+	Importamos -> import { HttpClientModule } from '@angular/common/http';
+	En el imports: [ metemos -> HttpClientModule
+
+3º En la clase de angular que vayamos a usar por ejemplo el list que tenemos en el api:
+	Inyectamos HttpClient -> constructor(private http: HttpClient) { }
+	Importamos -> import { HttpClient } from '@angular/common/http';
+
+4º Para obtener el listado de ese api:
+	Creamos la url de donde lo obtendremos -> private urlEndPoint: string = 'http://localhost:8080/api/clientes'
+	Obtenemos el dato -> 
+		getClientes(): Observable<Cliente[]>{ 
+			return this.http.get<Cliente[]>(this.urlEndPoint);
+		}
+		//Lo convertimos en observable para convertilo en stream, que es como se trabaja desde datos API REST.
+		//El <Cliente> es porque nos retorna un observable de tipo generico y tal y como lo tenemos en angular montado, necesitamos el tipo <Cliente>
+	
+	Obtenemos el dato forma 2 -> 
+		getClientes(): Observable<Cliente[]>{
+			return this.http.get(this.urlEndPoint).pipe(  //Se toma la respuesta que viene en un formato json en tipo de datos any y lo convertimos a un arreglo de Cliente[]
+     				map( response => response as Cliente[]) 
+    			);
+		}
+
+5º En donde queramos usar ese observable que obtenemos con el metodo GetClientes, lo debemos de pasar a tipo list para usarlo en la vista:
+	ngOnInit(): void {					//this.clientes es tipo clientes!: Cliente[];
+    		this.clienteService.getClientes().subscribe( 
+      		clientes => this.clientes = clientes  
+    		);
+ 	 }
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

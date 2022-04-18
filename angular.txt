@@ -199,7 +199,7 @@ export class ListadoComponent implements OnInit {
     </li>
 -------------------------------------------------------------------------------
 
--------------------------------Directiva nglf----------------------------------
+-------------------------------Directiva ngIf----------------------------------
 
 //Ocultar una etiqueta hasta que se cumpla una condicion, por ejemplo si es false no aparece, si es true aparece:
 <div *ngIf="false">
@@ -214,6 +214,8 @@ export class ListadoComponent implements OnInit {
     <span>{{heroeBorrado}}</span>
     <button (click)="borrarHeroe()">Borrar</button>
 </div>
+
+//Cambiar de true a false y viceversa con un (click) -> <button type="button" (click)="habilitar = (habilitar==true)? false: true" class="btn btn-primary my-3">{{habilitar==true? 'Ocultar': 'Mostrar'}}</button>
 -------------------------------------------------------------------------------
 
 ---------------------------------Directiva Ng-Template y nglf-else-------------------------------------
@@ -543,9 +545,22 @@ ng build --prod
 **************************
 ---------------------------------------------------------------------------------------------------------
 
+----------------------------- Truquitos -------------------------------------------
+//A la hora de inyectar esto es equivalente, pero mucho más corto:
+constructor(private clienteService: ClienteService) { }
+	y
+private clienteService:ClienteService;
+  constructor( clienteService: ClienteService) {
+    this.clienteService = clienteService;
+  }
+-----------------------------------------------------------------------------------
 
-
-
+--------------------------------- Transformar objeto en stream ------------------------------------------------------
+//Gracias a esto desde el cliente angular con el back end se notifican los cambios en el servidor sin necesidad de recargar la pagina mediante los observables.
+ getClientes(): Observable<Cliente[]>{ //Convertimos nuestro listado de clientes en un Observable, para convertirlo en un stream y poder manejarlo en api rest
+    return of(CLIENTES);
+  }
+---------------------------------------------------------------------------------------------------------------------
 
 Lo básico es:
 
