@@ -1,0 +1,36 @@
+------------------------------------------------------------------------------------- Validar form en el template ---------------------------------------------------------------------------
+//Ejemplo con campo nombre:
+		<div class="col-sm-6">
+                    <input type="text" class="form-control" [(ngModel)]="cliente.nombre" name="nombre" required
+                        minlength="4" #nombre="ngModel">
+                    <div class="alert alert-danger" *ngIf="nombre.invalid && (nombre.dirty || nombre.touched)">
+                        <div *ngIf="nombre.errors?.['required']">
+                            Nombre es requerido
+                        </div>
+                        <div *ngIf="nombre.errors?.['minlength']">
+                            Nombre debe tener al menos 4 caracteres
+                        </div>
+                    </div>
+                </div>
+
+//Ejemplo con campo email:
+	 	<div class="col-sm-6">
+                    <input type="text" class="form-control" [(ngModel)]="cliente.email" name="email" required email
+                        #email="ngModel">
+                    <div class="alert alert-danger" *ngIf="email.invalid && (email.dirty || email.touched)">
+                        <div *ngIf="email.errors?.['required']">
+                            Email es requerido
+                        </div>
+                        <div *ngIf="email.errors?.['email']">
+                            Email debe tener formato email@dominio
+                        </div>
+                    </div>
+                </div>
+
+//Deshabilitar boton crear mientras el formulario sea invalido:
+	<form #clienteForm="ngForm">
+	//Despues de marcar el form asi, lo comprobamos con el disabled:
+	<button class="btn btn-primary" role="button" *ngIf="!cliente.id else elseBlock" [disabled]="!clienteForm.form.valid" (click)="create()">Crear</button>
+
+//Podemos buscar apis validadores en https://angular.io/ si filtramos por validator.
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
