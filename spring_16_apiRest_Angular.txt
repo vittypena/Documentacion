@@ -174,7 +174,7 @@ Importamos en @NgModule en import: HttpClientModule.
 3º Definimos la url del endpoint -> private urlEndPoint: string = 'http://localhost:8080/api/clientes'
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------------- Validar form en el template ---------------------------------------------------------------------------
+------------------------------------------------------------------------------------- Validar form en el cliente---------------------------------------------------------------------------
 //Ejemplo con campo nombre:
 		<div class="col-sm-6">
                     <input type="text" class="form-control" [(ngModel)]="cliente.nombre" name="nombre" required		//ngModel consiste en una directiva que va a poblar
@@ -209,4 +209,90 @@ Importamos en @NgModule en import: HttpClientModule.
 	<button class="btn btn-primary" role="button" *ngIf="!cliente.id else elseBlock" [disabled]="!clienteForm.form.valid" (click)="create()">Crear</button>
 
 //Podemos buscar apis validadores en https://angular.io/ si filtramos por validator.
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------ Validar form desde el backend----------------------------------------------------------------------------------------------------
+1º Agregamos la dependencia:
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+
+2º Anotamos en el entity con:
+	@NotEmpty
+	@NotEmpty(message = "no puede estar vacio")
+	@Size(min=4, max =12)
+	@Email
+
+3º En el controlador antes de el metodo de crear por ejemplo anotamos con @Valid, para indicarle que se tiene que validar, sin esta anotacion a pesar de las reglas anteriores no se valida.
+
+4º Inyectar en el controlador el objeto que contiene los mensajes de error, para saber si ocurrio algun problema en la validacion -> BindingResult result
+
+5º Controlamos si hay erroes con un if y con el objeto metemos los errores en una lista:
+	@PostMapping("/clientes")
+	public ResponseEntity<?> create(@Valid @RequestBody Cliente cliente, BindingResult result) { //@RequestBody porque viene en formato JSon dentro de la petición
+		Map<String, Object> response = new HashMap<>();
+		Cliente clienteNew = null;
+		
+		if (result.hasErrors()) {
+			List<String> errors = new ArrayList<>();
+			for(FieldError err: result.getFieldErrors()) {
+				errors.add("El campo " + err.getField() + " " + err.getDefaultMessage());
+			}
+			response.put("error", errors);
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.BAD_REQUEST);
+		}
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------- Manejando esos erroes en angular -----------------------------------------------------------------------------------------------------------------------------------------
+//Tenemos que capturar el error desde el metodo que se encarga en el cliente de recibir los errores para tratarlos, en este caso es el if que contiene el BAD_REQUEST:
+
+	 update(cliente: Cliente): Observable<any>{
+    		return this.http.put<any>(`${this.urlEndPoint}/${cliente.id}`, cliente, {headers: this.httpHeaders}).pipe(
+      		catchError(e => {        
+       		this.router.navigate(['/clientes']);
+        	if(e.status==400){  //400 es BAD_REQUEST
+          		return throwError(() => e);
+        	}
+        	console.error(e.error.mensaje);
+        	swal.fire(e.error.mensaje, e.error.error, 'error')
+        	return throwError(() => e);
+      		})
+    	    );
+  	}
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------ Transformar los datos del observable usando operador map y pipe ----------------------------------------------------------------------------------------------------------------------------
+//Podemos formatear los datos de nuestro flujo (stream) con filtros (pipe) desde angular.
+//Por ejemplo para visualizar el nombre de cliente en mayuscula o el formato de fecha.
+//Se puede hacer con map a nivel de observable o con pipes.
+
+*************
+ Map
+*************
+Me da iwa, no me gusta
+
+*************
+ Pipe
+*************
+//Se aplican a variables que tenemos en las vistas, ademas es mejor segun el gachupino.
+//En mayusculas por ejemplo -> <td>{{item.apellido | uppercase}}</td>     -> | uppercase y ya XDXD
+//Fecha ->  <td>{{item.createAt | date:"EEEE dd, MMMM yyyy"}}</td>   
+//Para cambiar el idioma de los pipes por decfecto tenemos que cambiar el LOCALE_ID global de la app:
+1º En AppModulo añadimos el provider {provide: LOCALE_ID, useValue: 'es'}:
+	providers: [ClienteService, {provide: LOCALE_ID, useValue: 'es'}],
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------- Uso del operador tao en Observable ---------------------------------------------------------------------------------------------------------------------------------
+//Permite hacer operaciones sin cambiar el tipo de objeto, por ejemplo lo cambias para hacer esa operacion y luego fuera del tap es del tipo que estaba antes.
+update(cliente: Cliente): Observable<any>{
+    return this.http.put<any>(`${this.urlEndPoint}/${cliente.id}`, cliente, {headers: this.httpHeaders}).pipe(
+      tap((response: Cliente[]) => {
+        let clientes = response as Cliente[];
+        clientes.forEach( cliente =>{
+          console.log(cliente.nombre);
+        }
+          )
+      }),
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
