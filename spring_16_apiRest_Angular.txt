@@ -34,3 +34,179 @@
     		);
  	 }
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------- Rutas en angular, mapearlas --------------------------------------------------------------------------------
+1º En app.module.ts ponemos las rutas:
+	import { RouterModule, Routes } from '@angular/router';
+	const routes: Routes = [ //Routing de todos los componentes, similar a @GetMapping
+ 		{path: '', redirectTo: '/clientes', pathMatch: 'full'},
+  		{path: 'directivas', component: DirectivaComponent},
+  		{path: 'clientes', component: ClientesComponent},
+  		{path: 'clientes/form', component: FormComponent},
+  		{path: 'clientes/form/:id', component: FormComponent}
+	];
+1bº Importamos en @NgModule en import -> RouterModule.forRoot(routes)  
+
+2º Para cargas las vistas en el html, en vez de ir poniendo los componentes ponemos esta directiva especial:
+	<router-outlet></router-outlet>
+
+3º En el header html, invocamos la directiva asi: <a class="nav-link" aria-current="page" routerLink="/clientes">Clientes</a>
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------- BACKEND API REST -------------------------------------------------------------------------------
+//Al crear el proyecto seleccionamos DevTools, JPA, El de la BD que tengamos, y Web
+@CrossOrigin(origins = {"http://localhost:4200"})
+@RestController
+@RequestMapping("/api")
+public class ClienteRestController {
+	
+	@Autowired
+	private IClienteService clienteService;
+	
+	@GetMapping("/clientes")
+	public List<Cliente> index(){		
+		return clienteService.findAll();
+	}
+	
+	@GetMapping("/clientes/{id}")
+	public ResponseEntity<?> show(@PathVariable Long id) {		
+		Cliente cliente = null;
+		Map<String, Object> response = new HashMap<>();
+		
+		try {
+			cliente = clienteService.findById(id);
+		}catch (DataAccessException e ) {	
+			response.put("mensaje", "Cliente ID:".concat(id.toString()).concat(" error al realizar la consulta en la BD"));
+			response.put("error", e.getMessage().concat(": ").concat(e.getMostSpecificCause().getMessage()));
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+		}		
+		
+		if (cliente == null) {
+			response.put("mensaje", "El cliente ID:".concat(id.toString()).concat(" no existe en la BD"));
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.NOT_FOUND);
+		}
+		
+		return new ResponseEntity<Cliente>(cliente, HttpStatus.OK);
+	}
+	
+	@PostMapping("/clientes")
+	public ResponseEntity<?> create(@RequestBody Cliente cliente) { //@RequestBody porque viene en formato JSon dentro de la petición
+		Map<String, Object> response = new HashMap<>();
+		Cliente clienteNew = null;
+		
+		try{
+			clienteNew = clienteService.save(cliente);
+		}catch(DataAccessException e) {
+			response.put("mensaje", " error al realizar el insert en la BD");
+			response.put("error", e.getMessage().concat(": ").concat(e.getMostSpecificCause().getMessage()));
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+		}		
+		
+		response.put("mensaje", "El cliente ha sido creado con exito");
+		response.put("cliente", clienteNew);
+		return new ResponseEntity<Map<String, Object>>(response, HttpStatus.CREATED);
+	}	
+	
+	@PutMapping("/clientes/{id}")
+	public ResponseEntity<?> update(@RequestBody Cliente cliente, @PathVariable Long id) {	//Recibe el cliente que queremos introducir por eso el @RequestBody, porque viene en formato Json		
+		
+		Map<String, Object> response = new HashMap<>();
+		Cliente clienteActualizado = null;
+		Cliente clienteActual = null;
+		try {
+			clienteActual = clienteService.findById(id);
+		}catch (DataAccessException e ) {	
+			response.put("mensaje", "Cliente ID:".concat(id.toString()).concat(" error al realizar la consulta en la BD"));
+			response.put("error", e.getMessage().concat(": ").concat(e.getMostSpecificCause().getMessage()));
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+				
+		if (clienteActual == null) {
+			response.put("mensaje", "El cliente ID:".concat(id.toString()).concat(" no existe en la BD, por lo tanto no se puede editar"));
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.NOT_FOUND);
+		}
+		
+		clienteActual.setApellido(cliente.getApellido());
+		clienteActual.setNombre(cliente.getNombre());
+		clienteActual.setEmail(cliente.getEmail());		
+		
+		try {
+			clienteActualizado = clienteService.save(clienteActual);			
+		}catch (DataAccessException e ) {	
+			response.put("mensaje", "Error, el cliente no se ha podido actualizar");
+			response.put("error", e.getMessage().concat(": ").concat(e.getMostSpecificCause().getMessage()));
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		response.put("mensaje", "El cliente ha sido actualizado con exito");
+		response.put("cliente", clienteActualizado);
+		//Tambien se actualiza con save, si el id es null hace un persist si el id no es null hace internamente un merge y actualiza
+		return new ResponseEntity<Map<String,Object>>(response, HttpStatus.CREATED);
+	}
+	
+	@DeleteMapping("/clientes/{id}")
+	public ResponseEntity<?> eliminar(@PathVariable Long id) {
+		Map<String, Object> response = new HashMap<>();
+		try {
+			clienteService.delete(id);
+		}catch (DataAccessException e ) {	
+			response.put("mensaje", "Error al eliminar el cliente en la BD");
+			response.put("error", e.getMessage().concat(": ").concat(e.getMostSpecificCause().getMessage()));
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		response.put("mensaje", "El cliente ha sido eliminado con exito");
+		return new ResponseEntity<Map<String,Object>>(response, HttpStatus.OK);
+	}
+}
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------				-------------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------- Implementando en angular en back end-------------------------------------------------------------------------------------
+Importamos en app.module.ts -> import { HttpClientModule } from '@angular/common/http';
+Importamos en @NgModule en import: HttpClientModule.
+
+1º En la clase service que queramos usarlo -> import { HttpClient, HttpHeaders } from '@angular/common/http';
+
+2º Inyectamos la dependencia de HttpClient ->   constructor(private http: HttpClient, private router: Router) { } -> El router es de otra cosa.
+
+3º Definimos la url del endpoint -> private urlEndPoint: string = 'http://localhost:8080/api/clientes'
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------- Validar form en el template ---------------------------------------------------------------------------
+//Ejemplo con campo nombre:
+		<div class="col-sm-6">
+                    <input type="text" class="form-control" [(ngModel)]="cliente.nombre" name="nombre" required		//ngModel consiste en una directiva que va a poblar
+                        minlength="4" #nombre="ngModel">
+                    <div class="alert alert-danger" *ngIf="nombre.invalid && (nombre.dirty || nombre.touched)">
+                        <div *ngIf="nombre.errors?.['required']">
+                            Nombre es requerido
+                        </div>
+                        <div *ngIf="nombre.errors?.['minlength']">
+                            Nombre debe tener al menos 4 caracteres
+                        </div>
+                    </div>
+                </div>
+
+//Ejemplo con campo email:
+	 	<div class="col-sm-6">
+                    <input type="text" class="form-control" [(ngModel)]="cliente.email" name="email" required email
+                        #email="ngModel">
+                    <div class="alert alert-danger" *ngIf="email.invalid && (email.dirty || email.touched)">
+                        <div *ngIf="email.errors?.['required']">
+                            Email es requerido
+                        </div>
+                        <div *ngIf="email.errors?.['email']">
+                            Email debe tener formato email@dominio
+                        </div>
+                    </div>
+                </div>
+
+//Deshabilitar boton crear mientras el formulario sea invalido:
+	<form #clienteForm="ngForm">
+	//Despues de marcar el form asi, lo comprobamos con el disabled:
+	<button class="btn btn-primary" role="button" *ngIf="!cliente.id else elseBlock" [disabled]="!clienteForm.form.valid" (click)="create()">Crear</button>
+
+//Podemos buscar apis validadores en https://angular.io/ si filtramos por validator.
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
