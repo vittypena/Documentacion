@@ -296,3 +296,102 @@ update(cliente: Cliente): Observable<any>{
           )
       }),
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------ Paginacion en angular --------------------------------------------------------------------------------------
+1º Desde el BackEnd implementamos la interfaz Dao JpaRepository:
+	public interface IClienteDao extends JpaRepository<Cliente, Long>{
+
+	}
+
+2º En la interfaz servicio implementamos el metodo :
+	import org.springframework.data.domain.Pageable;
+	public Page<Cliente> findAll(Pageable pageable);
+
+3º En el serviceimpl implementamos el metodo:
+	@Override
+	public Page<Cliente> findAll(Pageable pageable) {
+		return clienteDao.findAll(pageable);		
+	}
+
+4º Desde el rest controller implementamos el metodo con la ruta mapeada que devuelve el page:
+	@GetMapping("/clientes/page/{page}")
+	public Page<Cliente> index(@PathVariable Integer page){		
+		return clienteService.findAll(PageRequest.of(page, 4));
+	}
+
+5º Desde el lado del cliente angular hay que moficiar cliente.service.ts:
+	getClientes(page:number): Observable<any> { 
+    		return this.http.get(this.urlEndPoint + '/page/' + page).pipe(
+      			map((response: any) => {
+        			(response.content as Cliente[])
+        			return response;
+      			})
+    		)  
+  	}
+
+6º En el cliente.component.ts, hay que pasar el numero d epagina al metodo getClientes:
+ export class ClientesComponent implements OnInit {
+
+  clientes!: Cliente[];  
+  paginador:any;
+
+  constructor(private clienteService: ClienteService, private activatedRoute: ActivatedRoute) { }//Se define el atributo y a su vez de inyecta
+
+  ngOnInit(): void {     
+    this.activatedRoute.paramMap.subscribe( params => {   
+      let page:number = +params.get('page')! | 0; //Lo convierte a string y si no hay parametro lo pone en 0 por defecto.
+      this.clienteService.getClientes(page).subscribe(  //Get cliente es un observable, va a ser observado por observadores, entonces tenemos que subscribirlo
+        response => {
+          this.clientes = response.content as Cliente[]  //Pasamos el stream a this.clientes
+          this.paginador = response;
+        }
+      );
+    }
+    );
+ }
+
+7º Agregamos la ruta del paginador en el app.module.ts para poder ir cambiando de paginas:
+	{path: 'clientes/page/:page', component: ClientesComponent}
+
+8º Ahora en el cliente.component.ts hay que cambiar el let page = 0, inyecto el parametro activated route, importandolo desde import { ActivatedRoute } from '@angular/router';, para poder ver la ruta que corresponde e ir cambiando la pagina:
+	constructor(private clienteService: ClienteService, private activatedRoute: ActivatedRoute) { }
+
+9º Creamos el componente paginador, de tal manera que con links vayamos cambiando la ruta del page, lo colocamos en el el componente que queramos mostrarlo: <paginator-nav *ngIf="paginador" [paginador] = "paginador"></paginator-nav>
+
+//paginator.component.html:
+	<ul *ngIf="paginas!.length > 0" class="pagination">
+    		<li *ngFor="let numeroPagina of paginas">
+        		<a [routerLink]="['/clientes/page', numeroPagina-1]">{{ numeroPagina }}</a>
+    		</li>
+	</ul>	
+//paginator.component.ts:
+	@Component({
+  		selector: 'paginator-nav',
+  		templateUrl: './paginator.component.html'
+	})
+	export class PaginatorComponent implements OnInit {
+
+  		@Input()
+  		paginador: any;
+
+  		paginas!: number[];
+
+  		constructor() { }
+
+  		ngOnInit(): void {
+    		  this.paginas = new Array(this.paginador.totalPages).fill(0).map((_valor, indice) => indice + 1);
+  		}
+
+	}
+
+ *****************************
+* [ Dar estilo al paginador ] *
+ *****************************
+<ul *ngIf="paginas!.length > 0" class="pagination">
+    <li *ngFor="let numeroPagina of paginas" class="page-item">
+        <span *ngIf="numeroPagina-1 == paginador.number" class="page-link">{{numeroPagina}}</span>  <!--Si estamos en la misma pagina deshabilitamos ese boton-->
+        <a *ngIf="numeroPagina-1 != paginador.number" [routerLink]="['/clientes/page', numeroPagina-1]" class="page-link">{{ numeroPagina }}</a>
+    </li>
+</ul>
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
