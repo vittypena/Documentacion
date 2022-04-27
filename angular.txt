@@ -553,6 +553,14 @@ private clienteService:ClienteService;
   constructor( clienteService: ClienteService) {
     this.clienteService = clienteService;
   }
+
+//Array con valores unicos:
+    if (!this._historial.includes(query)) {
+      this._historial.unshift(query); //Lo inserta al inicio
+    }
+
+//Capitalizar con pipes, | titlecase:
+	<a href="#" class="list-group-item list-group-item-action">{{ item | titlecase }}</a>
 -----------------------------------------------------------------------------------
 
 --------------------------------- Transformar objeto en stream ------------------------------------------------------

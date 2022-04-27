@@ -1,3 +1,116 @@
------------------------------GifsApp-------------------------------
+------------------------------------- Distintas formas de obtener datos de un form -------------------------------------
+***********
+@ViewChild
+***********
+1º En el input del html: (keyup.enter)="buscar( txtBuscar.value )" #txtBuscar
+2º En el ts: 
+	@ViewChild('txtBuscar') txtBuscar!: ElementRef<HTMLInputElement>;
 
--------------------------------------------------------------------
+  	buscar( termino: string ){    
+    		const valor = console.log( this.txtBuscar.nativeElement.value );
+    		console.log(valor);
+    		this.txtBuscar.nativeElement.value = '';
+  	}
+------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------- Service --------------------------------------------------------
+Para usar un servicio hay que inyectarlo en la clase que queramos acceder a sus metodos: constructor(private gifsService: GifsService){}
+
+//El servicio:
+import { Injectable } from '@angular/core';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class GifsService {
+
+  private _historial: string[] = [];
+
+  get historial() {
+    return [...this._historial];
+  }
+
+  buscarGifs(query: string ){
+    this._historial.unshift(query); //Lo inserta al inicio
+    console.log(this._historial);
+  }
+}
+
+//Para poder exportar por asi decir un array desde el service necesitamos usar el get:
+	get historial() {
+    		return [...this._historial];
+  	}
+//Se usa inyectando el servicio y this.gifsService.historial;
+------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------- GIPHY API de giffs---------------------------------------------------------
+https://developers.giphy.com/
+1º Para consumir el api: 
+	En el app.module.ts para usarlo de forma global o en el module que sea, importamos  HttpClientModule en imports, import { HttpClientModule } from '@angular/common/http';
+	//Esto nos aportara un monton de servicios para poder consumir apis.
+2º En el service que queramos usarlo lo inyectamos:
+	constructor( private http: HttpClient ){}
+3º Usamos el subscribe con el metodo de Observable para obtener los datos de la api:
+	this.http.get(`https://api.giphy.com/v1/gifs/search?api_key=1enouhGe0CqHaOr1FNdJjpfWU44zoRCJ&q=${query} <&limit10`)
+          .subscribe( ( resp: any ) => {
+          	console.log( resp.data );
+          	this.resultados = resp.data;
+           });
+
+4º Ahora tenemos que almacenar esos resultados para hacer algo con ellos, lo almacenamos en el servicio:
+	public resultados: any[] = [];
+
+5º Como lo manejamos desde un componente?¿ Pues obtenemos en el .ts  los datos del servicio:
+	constructor( private gifsService: GifsService) { }
+	get resultados(){
+    		return this.gifsService.resultados;
+  	}
+6º Y en el html los manejamos:
+	<div class="row">
+    		<div *ngFor="let item of resultados" class="col-md-4 col-sm-6">
+        		<div class="card">
+            			<img [src]="item.images.downsized_medium.url" [alt]="item.title" class="card-img-top">
+       		 	</div>
+    		</div>
+	</div>
+
+7º Para ofrecer el tipado en vez de any podemos usar https://quicktype.io/ y con ello crear una interfaz y ponerle de ese tipo, para ello pegamos toda la respuesta que nos de la api en psotman por ejemplo en el json
+y la pegamos a la izq, ponemos un nombre a la clase y luego a la derecha cambiamos el lenguaje a typeScript y copiamos el codigo y lo pegamos en una clase interface dentro de interface, gifs.interface.ts, SearchGifsResponse
+
+8º Ahora podemos quitarle el any al resp y ponerle el tipo a el get de la nueva clase (no pasa nada si en la interfaz hay mucha roña, al hacer la trauccion a js y ser una interfaz la quita, asi que no incrementa el peso de la app):
+	this.http.get<SearchGifsResponse>(`https://api.giphy.com/v1/gifs/search?api_key=1enouhGe0CqHaOr1FNdJjpfWU44zoRCJ&q=${query} <&limit10`)
+        .subscribe( ( resp ) => {
+          console.log( resp.data );
+          this.resultados = resp.data;
+        });
+-------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------- Persistir informacion con Local Storage --------------------------------------------
+//Se puede guardar informacion en el equipo o navegador local del usuario. 
+1º Guardar en Local Storage, el metodo setItem requiere guardar en string y historial es un array, pero gracias al JSON.stringify podemos guardar objetos como si fueran strings:
+	localStorage.setItem('historial', JSON.stringify( this._historial));
+
+2º Si hace un refresh hay que reestablecer la informacion del historial local:
+	//Comprobamos en el constructor si existe el localStorage y si existe, debemos transformar el objeto al que era con JSON.parse, para poder meterlo en this._historial como array, ya que lo habiamos transformado a String.
+		constructor( private http: HttpClient ){
+    			if(localStorage.getItem('historial')){
+      				this._historial = JSON.parse(localStorage.getItem('historial')!) || [];
+    			}    
+  		}
+-------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------- HttpParams -----------------------------------------------------------------
+//Nos permite construir la url de una manera más sencilla.
+	const params = new HttpParams().set('api_key',this.apiKeyGif)
+                                       .set('limit','10')
+                                       .set('q',query);
+//Esto es igual a `https://api.giphy.com/v1/gifs/search?api_key=${this.apiKeyGif}&q=${query} <&limit10`
+
+//Lo usamos de la siguiente manera: this.http.get<SearchGifsResponse>(`${this.apiUrl}/search`, { params })
+
+//apiUrl es un string que contiene la url de la api -> private apiUrl: string = 'https://api.giphy.com/v1/gifs';
+----------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------ Libreria animaciones ----------------------------------------------------------------
+https://animate.style/
+--------------------------------------------------------------------------------------------------------------------------------------
