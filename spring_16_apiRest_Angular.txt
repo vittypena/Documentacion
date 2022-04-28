@@ -388,10 +388,250 @@ update(cliente: Cliente): Observable<any>{
 * [ Dar estilo al paginador ] *
  *****************************
 <ul *ngIf="paginas!.length > 0" class="pagination">
-    <li *ngFor="let numeroPagina of paginas" class="page-item">
+    <li href="page-item" *ngIf="paginador.number > 0">
+        <a class="page-link" [routerLink]="['/clientes/page', paginador.number-1]">&laquo;</a>
+    </li>
+
+    <li [ngClass]="paginador.first?'disabled page-item': 'page-item'">
+        <a [routerLink]="['/clientes/page', 0]" class="page-link">Primera</a>
+    </li>
+
+    <li *ngFor="let numeroPagina of paginas" class="page-item" [ngClass]="numeroPagina-1 == paginador.number? 'active':''">
         <span *ngIf="numeroPagina-1 == paginador.number" class="page-link">{{numeroPagina}}</span>  <!--Si estamos en la misma pagina deshabilitamos ese boton-->
         <a *ngIf="numeroPagina-1 != paginador.number" [routerLink]="['/clientes/page', numeroPagina-1]" class="page-link">{{ numeroPagina }}</a>
     </li>
+
+    <li [ngClass]="paginador.last?'disabled page-item': 'page-item'">
+        <a [routerLink]="['/clientes/page', paginador.totalPages-1]" class="page-link">Ultima</a>
+    </li>
+
+    <li href="page-item" *ngIf="paginador.number < paginador.totalPages-1">
+        <a class="page-link" [routerLink]="['/clientes/page', paginador.number+1]">&raquo;</a>
+    </li>          
 </ul>
 
+********************************************
+* OverFlow en paginador con muchas paginas *
+********************************************
+//Para solucionar esto podemos -> <ul *ngIf="paginas!.length > 0" class="pagination" style="overflow:scroll"> -> o trabajar con rangos, que es lo ideal.
+	export class PaginatorComponent implements OnChanges {
+
+  		@Input()
+  		paginador: any;
+
+ 		paginas!: number[];
+
+  		desde?: number | any;
+  		hasta?:number;
+  		constructor() { }
+  		ngOnChanges(changes: SimpleChanges): void {
+    			throw new Error('Method not implemented.');
+  		}
+
+  		ngOnChanges(changes: SimpleChanges): void {
+    			this.desde = Math.min( Math.max(1, this.paginador.number-4),this.paginador.totalPages-6);
+    			this.hasta = Math.max( Math.min(this.paginador.totalPages, this.paginador.number+4), 6);
+
+    			if(this.paginador.totalPages>5){
+      				this.paginas = new Array(this.hasta - this.desde + 1).fill(0).map((_valor, indice) => indice + this.desde);
+    			}else{
+      				this.paginas = new Array(this.paginador.totalPages).fill(0).map((_valor, indice) => indice + 1);
+    			}    
+  		}
+
+	}
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------ Angular material DatePicker ----------------------------------------------------------------------------------
+Fuente de angular material -> https://material.angular.io/
+Instalamos angular material en el proyecto: ng add @angular/material
+Realizamos los import necesarios.
+Instalamos npm install --save moment y npm install --save @angular/material-moment-adapter
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------------- Upload BackEnd ----------------------------------------------------------------------------------------------
+1º Mapeamos en el api rest el metodo encargado del upload, previamente en en el entity lo hemos metido como un string.	
+	@PostMapping("/clientes/upload")
+	public ResponseEntity<?> upload(@RequestParam("archivo") MultipartFile archivo, @RequestParam("id") Long id){
+		Map<String, Object> response = new HashMap<>();
+		
+		Cliente cliente = clienteService.findById(id);
+		
+		if(!archivo.isEmpty()) {
+			String nombreArchivo = UUID.randomUUID().toString() + archivo.getOriginalFilename().replace(" ", "");
+			Path rutaArchivo = Paths.get("uploads").resolve(nombreArchivo).toAbsolutePath();	
+			
+			try {
+				Files.copy(archivo.getInputStream(), rutaArchivo);	//Copia el archivo subido al servidor a la ruta escogida
+			} catch (IOException e) {
+				response.put("mensaje", "Error al subir la imagen del cliente " + nombreArchivo);
+				response.put("error", e.getMessage().concat(":").concat(e.getCause().getMessage()));
+				return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+			
+		String nombreFotoanterior = cliente.getFoto();
+			
+		if(nombreFotoanterior != null && nombreFotoanterior.length() > 0) {
+			Path rutaFotoAnterior = Paths.get("uploads").resolve(nombreFotoanterior).toAbsolutePath();
+			File archivoFotoAnterior = rutaFotoAnterior.toFile();
+			if(archivoFotoAnterior.exists() && archivoFotoAnterior.canRead()) {
+				archivoFotoAnterior.delete();
+			}
+		}
+			
+		cliente.setFoto(nombreArchivo);
+			
+		clienteService.save(cliente);
+			
+		response.put("cliente", cliente);
+		response.put("mensaje", "Has subido correctamente la imagen: " + nombreArchivo);
+	}
+
+2º Creamos la carpeta uploads en el proyecto, en la raiz mismo
+
+3º En el application.properties aumentamos el tamaño de archivo maximo:
+	spring.servlet.multipart.max-file-size=10MB
+	spring.servlet.multipart.max-request-size=10MB
+
+4º Añadir metodo handler para mostrar la imagen:
+	@GetMapping("/uploads/img/{nombreFoto:.+}")// nombreFoto:.+ significa que va a tener una extensión.
+	public ResponseEntity<Resource> verFoto(@PathVariable String nombreFoto){
+		Path rutaArchivo = Paths.get("uploads").resolve(nombreFoto).toAbsolutePath();
+		
+		Resource recurso = null;
+		
+		try {
+			recurso = new UrlResource(rutaArchivo.toUri());
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
+		
+		if(!recurso.exists() && !recurso.isReadable()) {
+			throw new RuntimeException("Error no se pudo cargar la imagen: " + nombreFoto);
+		}
+		
+		HttpHeaders cabecera = new HttpHeaders();
+		cabecera.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + recurso.getFilename() + "\"" );		
+		
+		return new ResponseEntity<Resource>(recurso, cabecera,  HttpStatus.OK);
+	}
+
+****************
+ Desde Front
+****************
+
+Creamos el componente detalle: ng g c detalle.
+
+//La clase detalle.component.ts:
+      export class DetalleComponent implements OnInit {
+
+  	cliente?: Cliente;
+
+  	constructor(private clienteService: ClienteService, private activatedRote: ActivatedRoute) { }//ActivatedRoute permite identificar cuando cambia el parametro id.
+
+  	ngOnInit(): void {
+    		this.activatedRote.paramMap.subscribe(params =>{//Subcribir cuando cambia el id para poder obtener el parametro del cliente
+      		let id: number = +params.get('id')!;//Obtenemos el parametro id
+      		if(id){
+        		this.clienteService.getCliente(id).subscribe(cliente => { //obtenemos el objeto cliente con ese id y se lo pasamos a nuestro cliente.
+          		this.cliente = cliente;
+        	})
+      	       }
+    	}
+    	);
+      }
+
+//La clase detalle.component.html:
+	<div class="card bg-dark text-white">
+   	<div class="card-header">{{titulo}}</div>
+    		<div class="card-body">
+        		<div class="input-group">
+            			<input type="file" class="form-control" id="inputGroupFile04" aria-describedby="inputGroupFileAddon04" aria-label="Upload">
+            			<button class="btn btn-outline-secondary" type="button" id="inputGroupFileAddon04">Subir foto</button>
+          		</div>
+    		</div>
+	</div>
+
+6º Añadimos la ruta en app.module.ts -> {path: 'clientes/verimg/:id', component: DetalleComponent} y añadimos el boton en clientes.component.html -> <button type="button" [routerLink]="['/clientes/verimg', item.id]" class="btn btn-success">{{item.id}}</button>
+
+*****************************
+Subir archivo desde el Front
+*****************************
+1º En la clase cliente service implementamos el metodo que contectara con el back:
+	subirFoto(archivo: File , id: string | Blob): Observable<Cliente>{
+    
+    		let formData = new FormData();
+    		formData.append("archivo", archivo); //
+    		formData.append("id", id);
+    		return this.http.post(`${this.urlEndPoint}/upload/`, formData).pipe(
+      			map( (response: any) => response.cliente as Cliente),
+      			catchError( e=> {
+        			this.router.navigate(['/clientes']);
+        			console.error(e.error.mensaje);
+        			swal.fire(e.error.mensaje, e.error.error, 'error')
+        			return throwError(() => e);
+      			})
+    		);
+  	}
+2º Implementamos en el html en el input File de foto el evento change que es similar al onChange y el evento subirFoto en el boton():
+	<input (change)="seleccionarFoto($event)" type="file" class="form-control" id="inputGroupFile04" aria-describedby="inputGroupFileAddon04" aria-label="Upload">
+	<button (click)="subirFoto()" class="btn btn-outline-secondary" type="button" id="inputGroupFileAddon04">Subir foto</button>
+
+3º Implementamos el metodo seleccionarFoto() y subirFoto():
+	seleccionarFoto(event: any){
+    		this.fotoSeleccionada = event.target.files[0];
+    		console.log(this.fotoSeleccionada);
+  	}
+
+	subirFoto(){
+    		this.clienteService.subirFoto(this.fotoSeleccionada, this.cliente?.id).subscribe(cliente => {
+      		this.cliente = cliente;
+    		});
+  	}
+
+4º Creamos la clase detalle.component.html para la vista:
+	<div class="card bg-dark text-white">
+    		<div class="card-header">{{titulo}}</div>
+
+    		<div class="card-body">
+        		<div class="container">
+            			<div class="row">
+                			<div class="col-sm">
+                    				<ul class="list-group text-dark mb-3" *ngIf="cliente">
+                        				<li class="list-group-item active">{{cliente.nombre}}</li>
+                        				<li class="list-group-item">{{cliente.apellido}}</li>
+                        				<li class="list-group-item">{{cliente.email}}</li>
+                        				<li class="list-group-item">{{cliente.createAt | date: "fullDate"}}</li>
+                    				</ul>
+
+                    			<div class="input-group">
+                        			<div class="custom-file">
+                            				<input (change)="seleccionarFoto($event)" type="file" class="form-control" id="inputGroupFile04" aria-describedby="inputGroupFileAddon04" aria-label="Upload">
+                            				<label class="custom-file-label" for="inputGroupFile04">Seleccionar Foto</label>
+                       	 			</div>
+                        		<div class="input-group-append">
+                            			<button (click)="subirFoto()" class="btn btn-outline-secondary" type="button" id="inputGroupFileAddon04">Subir foto</button>
+                        		</div>
+                  		</div>
+                	</div>
+                	<div class="col-sm">
+                    		<img *ngIf="cliente?.foto" src="http://localhost:8080/api/uploads/img/{{cliente.foto}}" alt="{{cliente.foto}}" class="img-thumbail rounded">
+                	</div>
+            	</div>
+       	</div>            
+    </div>
+</div>
+
+5º Validamos la imagen antes de subirla para que no sea un .doc por ejemplo:
+	seleccionarFoto(event: any){
+    		this.fotoSeleccionada = event.target.files[0];
+
+	subirFoto(){
+    		if(!this.fotoSeleccionada){
+6º Realizar barra de progreso:
+	
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------- Agregando campo select en el formulario -----------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
