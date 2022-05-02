@@ -1,0 +1,101 @@
+----------------------------------------------------------------------------     PrimeNg                 ------------------------------------------------------------------------------------
+https://www.primefaces.org/
+//Estilo bootstrap.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------- Pipes de angular----------------------------------------------------------------------------------------------
+https://angular.io/api/common/DatePipe
+
+//Cambiar el idioma por defecto de angular, en module app:
+	import localeEs from '@angular/common/locales/es';  //despues de locales/ control intro y vemos todos
+	import { registerLocaleData } from '@angular/common';
+	registerLocaleData(localeEs)
+		CODIGO POR MEDIO
+	providers: [
+    		{ provide: LOCALE_ID, useValue: 'es'}
+  	],
+
+//Cambiar una palabra segun una condicion con un map, por ejemplo el genero:
+	1º En el ts:
+		nombre: string = 'Susana';
+  		genero: string = 'femenino';
+
+  		invitacionMapa= {
+    			'masculino': 'invitarlo',
+    			'femenino': 'invitarla'
+  		}
+	2º En el html:
+		<p-fieldset legend="i18nSelectPage" [toggleable]="true">
+    			Saludos {{nombre}}, es un placer 
+    			{{ genero | i18nSelect: invitacionMapa }} 
+    			a nuestro evento.
+		</p-fieldset>	
+
+//Cambiar el plural segun el length del array:
+	1º En el ts:
+		clientes:string[] = ['Pedro', 'Maria', 'Juan'];
+
+  		clientesMapa= {
+    			'=0':'no tenemos ningún cliente esperando',
+    			'=1':'tenemos un cliente esperando',
+    			'=2':'tenemos dos clientes esperando',
+    			'other':'tenemos # clientes esperando'
+  		}
+	2º En el html:
+		<p-fieldset legend="i18nPlural Pipe" [toggleable]="true">
+    			Actualmente tenemos {{clientes.length | i18nPlural: clientesMapa}}.
+		</p-fieldset>
+
+//SlicePipe, sirve para mostar x de un array, por ejemplo en el ejemplo mostramos del 0 al 2:
+	<p-fieldset legend="Slice Pipe" [toggleable]="true">
+        	<b>Original</b>
+        	<p>{{ clientes }}</p>
+
+        	<b>slice:0:2</b>
+        	<pre>{{clientes | slice:0:2}}</pre>
+   	 </p-fieldset>
+
+//KeyValuePipe, sirve para iterar objetos que no son iterables:
+	1º En el ts:
+		persona = {
+    			nombre: 'Fernando',
+    			edad:35,
+    			direccion: 'Ottawa, Canada'
+  		}
+	2º En el html: 
+		<div class="col md-6">
+    			<p-fieldset legend="KeyValue Pipe" [toggleable]="true">
+        			<ul>
+            				<li *ngFor="let item of persona | keyvalue">
+                				{{ item.key}}: {{ item.value }}
+            				</li>
+        			</ul>
+    			</p-fieldset>
+		</div>
+
+//JsonPipe, pasar a formato json un arreglo por ejemplo:
+	{{heroes | json}}
+
+//AsyncPipe para observables o promesas, permite ingresar los valores del observable en el html sin subscribirse:
+	//Con observable
+	    1º En el ts:
+		 miObservable = interval(1000);
+	    2º En el html, el | async se subscribe internamente al observable:
+		<pre> {{ miObservable | async }} </pre>
+	//Con promesa:
+	  1º En el ts:
+	   valorPromesa = new Promise( (resolve, reject)  => {
+      		setTimeout(() => {
+        		resolve('Fin de la promesa')
+      		}, 3500);
+    	   });
+          2º En el html:
+		<pre *ngIf="!(valorPromesa | async)"> Resolviendo Promesa </pre>	//Mientras no haya cargado que muestre esto
+        	<pre> {{ valorPromesa | async }} </pre>
+	
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------Pipes Personalizados-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

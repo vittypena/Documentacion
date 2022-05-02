@@ -1,0 +1,71 @@
+-------------------------------------------------------------- Implementar -------------------------------------------------------------------
+1º Importamos en el module.ts del form: ReactiveFormsModule.
+
+2º En el html:
+	<form autocomplete="off" [formGroup]="miFormulario">			<!--Le ponemos el formGroup que hemos definido en el ts-->
+
+	<input type="text" class="form-control" placeholder="Nombre del producto" name="producto"
+                    formControlName="nombre">					<!--Tenemos que vincular el input a el form que hemos creado en el ts-->
+3º En el ts:
+	//Definimos el formulario
+  	miFormulario: FormGroup = new FormGroup({
+    		'nombre': new FormControl('RTX 4080ti')
+  	});  
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------- Form Builder ------------------------------------------------------------------------------------
+//Es una manera más sencilla para declarar el formulario:
+
+1º Inyectamos el servicio FormBuilder propio de angular:
+	constructor( private fb: FormBuilder) { }
+	miFormulario: FormGroup = this.fb.group({
+    		nombre      : [ 'RTX 4080ti' ],
+    		precio      : [ 0 ],
+    		existencias : [ 0 ]    
+  	})
+
+//Inicializar form si quieres:
+	ngOnInit(): void {
+    		this.miFormulario.reset({
+	      		nombre: 'RTX 4080Ti',
+	      		precio: 1600,
+      			existencias: 10
+    		})
+  	}
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------ Validaciones -------------------------------------------------------------------------------------
+// FORMATO -> nombre      : [ 'RTX 4080ti', VALIDADORES SINCRONOS , VALIDADORES ASINCRONOS],
+
+//Que sea requerido: 
+	miFormulario: FormGroup = this.fb.group({
+    		nombre      : [ 'RTX 4080ti', Validators.required , ]
+
+//Más de una validación sincrona:
+	nombre      : [ 'RTX 4080ti', [ Validators.required, Validators.minLength(3) ] , ],
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------ Mostrar mensajes de error-------------------------------------------------------------------------
+1º Desde el ts:
+	campoEsValido( campo: string){
+    		return this.miFormulario.controls[campo].errors && this.miFormulario.controls[campo].touched;
+  	}
+2º Desde el html:
+	<span class="form-text text-danger" *ngIf="campoEsValido('nombre')">Debe de ser de 3 letras</span>
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------ Mostrar mensajes de error al pulsar boton-------------------------------------------------------------------------
+1º En el ts:
+	guardar(){
+    		if(this.miFormulario.invalid){
+      			this.miFormulario.markAllAsTouched(); //Para que muestre los mensajes como si hubiese tocado los campos
+      			return;
+    		}
+
+    		console.log(this.miFormulario.value);
+		this.miFormulario.reset();  //Resetea el formulario
+  	}
+2º En el html
+	<form autocomplete="off" [formGroup]="miFormulario" (ngSubmit)="guardar()">
+	<button type="submit" class="btn btn-primary float-end"> Guardar </button>
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -114,3 +114,227 @@ y la pegamos a la izq, ponemos un nombre a la clase y luego a la derecha cambiam
 ------------------------------------------------ Libreria animaciones ----------------------------------------------------------------
 https://animate.style/
 --------------------------------------------------------------------------------------------------------------------------------------
+
+-------------------------------------------------------------- Router Module ---------------------------------------------------------------------------------------
+import { Component, NgModule } from '@angular/core';
+import { Router, RouterModule, Routes } from '@angular/router';
+import { PorPaisComponent } from './app/pais/pages/por-pais/por-pais.component';
+import { PorRegionComponent } from './app/pais/pages/por-region/por-region.component';
+import { PorCapitalComponent } from './app/pais/pages/por-capital/por-capital.component';
+import { VerPaisComponent } from './app/pais/pages/ver-pais/ver-pais.component';
+
+const routes: Routes =[
+    {
+        path: '',   //la ruta en la que cargara el componente
+        component: PorPaisComponent,    
+        pathMatch: 'full'   //Para que concuerde con la ruta de manera estricta, si no al ser '' vacio pillaria todo porque todo empieza por vacio
+    },
+    { path: 'region', component: PorRegionComponent},
+    { path: 'capital', component: PorCapitalComponent},
+    { path: 'pais/:id', component: VerPaisComponent },   //ruta dinamica segun el id
+    { path: '**', redirectTo: ''}   //ruta por defecto al home si no se incluye ninguna de las anteriores
+];
+
+@NgModule({
+    imports: [
+        RouterModule.forRoot( routes )
+    ],
+    exports:[
+        RouterModule
+    ]
+})
+export class AppRoutingModule{
+
+}
+
+//Lo importamos en la clase html que sea con <router-outlet></router-outlet>
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-------------------------------------------------------------- RouterLink y RouterLinkActive  ----------------------------------------------------------------------
+//Nos lleva a las rutas definididas en el routing.module.ts, tenemos que indicarla con el nombre que tengamos ahi.
+	<li routerLink="capital" class="list-group-item">Por capital</li>
+
+//RouterLinkActive es similar a meterle el active en html a una lista para que se quede marcado, solo que de esta manera se lo metera al que seleccionemos:
+	routerLinkActive="active"	//En todos los li
+//El router link tiene el inconveniente de que no pilla un pathmatch full, por lo tanto se lo debemos de indicar en los que sea necesario con el routerLinkActiveOptions, para que solo marque activo el que concuerde full con la ruta:
+	<li routerLink="" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" class="list-group-item">Buscar país</li>
+
+//Si lo vamos a usar en un componente con un modulo externo (los modulos son como pequeñas burbujas, si hay que usar algo que requiera de impor, hay que importarlo aqui tb), hay que importar el Router Module:
+	imports: [
+    		CommonModule, 
+    		RouterModule
+  	]
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-------------------------------------------------------------- Obtener datos del api rest-------------------------------------------------------------------------
+buscarPais(termino: string): Observable<RESTCountriesResponse[]>{		//RESTCountriesResponse[] con [] porque queremos que regrese un arrego de pais no un pais
+    const url = `${this.apiUrl}/name/${termino}`;
+      return this.http.get<RESTCountriesResponse[]>(url);
+  }
+
+//Si queremos poner varias cosas dentro del next o error en varias lineas, con esta sintaxis, si no con la de abajo. Con data[0] obtenemos el primer valor.
+this.paisService.buscarPais(this.termino)
+      .subscribe({        
+        next: (data) => {
+          console.log('DATA', data)
+          data[0].languages      
+        },
+        error: (_) => this.hayError = true
+       });
+
+//
+
+this.paisService.buscarPais(this.termino)
+      .subscribe({
+        next: (data) => console.log('DATA', data),
+        error: (_) => this.hayError = true
+       });
+
+//Rellenar una tabla con esos datos:
+<tbody>
+                <tr *ngFor="let item of paises; let i = index">   <!--let i = index para extraer un indice-->
+                    <td> {{ i + 1 }}</td>
+                    <td>
+                        <img class="small-flag" [src]="item.flags.svg">
+                    </td>
+                    <td> {{ item.name.common }}</td>
+                    <td> {{ item.population }}</td>
+                    <td>
+                       <a [routerLink]="['/pais', item.cca2]">Ver...</a>
+                    </td>
+                </tr>
+            </tbody>
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------  Inputs y Output ---------------------------------------------------------------------------------------------
+Output es del hijo al padre es donde se usa el EventEmitter, e input es del padre al hijo.
+
+********
+ Input
+********
+1º Podemos enviar informacion de un componente a otro, por ejemplo hacemos un @Input() del atributo con el mismo nombre que queramos importar(se llama paises en el otro componente):
+	@Input() paises: RESTCountriesResponse[] = []
+2º Y desde el html donde invocamos el componente <app-pais-tabla></app-pais-tabla> enviamos la informacion a donde esta recibiendo el input:
+	<app-pais-tabla [paises]="paises"></app-pais-tabla>
+
+*******
+ Output
+*******
+1º Desde el hijo, es decir si queremos enviar algun dato al padre, el padre es el que invoca por ejemplo <app-input-tabla>
+	import { EventEmitter } from '@angular/core';
+	@Output() onEnter: EventEmitter<string>= new EventEmitter();
+
+	termino: string = '';
+
+	buscar(){
+	    this.onEnter.emit( this.termino )		//Emitimos el termino que es un string que rellenamos desde el html al componente padre, para que lo gestione el.
+  	}
+2º Desde el componente padre:
+	//En el html: 
+		<app-pais-input (onEnter)="buscar( $event )"></app-pais-input><!--Escuchamos el evento onEnter y llamamos al metodo que esta en el padre, osea este y le mandamos el evento-->
+	//En el service.ts recibimos el $event:
+		  buscar( termino: string){
+    			this.hayError = false;  
+    			this.termino = termino;
+    			console.log(this.termino);    
+    			this.paisService.buscarPais(this.termino)
+      				.subscribe({        
+        				next: (data) => {
+          					console.log('DATA', data);
+          					this.paises = data; 
+        				},
+        				error: (_) => {
+          					this.hayError = true;
+          					this.paises = [];
+        					}
+       					});
+  		}
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-------------------------------------------------------------- DebounceTime  ---------------------------------------------------------------------------------------
+//Se aconseja cuando se disparan busquedas cuando la persona escribe, de tal manera que retrasa la busqeuda de autocompletado al querer borrar algo para que no vaya aconsejando:
+//El debouncer es una función como cualquier otra, pero su propósito es limitar la frecuencia con la que algún método o fragmento de código se ejecuta.
+//¿De qué sirve? Pues ayuda a NO sobrecargar nuestras APIs con peticiones innecesarias o bien nuestros servicios, que generalmente son el origen de las peticiones al servidor.	
+
+  @Output() onDebounce: EventEmitter<string>= new EventEmitter(); //Se va a emitir cuando la persona deja de escribir
+
+  debouncer: Subject<string> = new Subject(); //Es un observable, que utilizare para ver cuando dejo de escribir
+
+  ngOnInit(): void {
+    this.debouncer
+    .pipe(  //Para transformar la salida de este subscrime
+      debounceTime(300)  //Cuantas milesimas de segundo puede esperar antes de emitir el valor
+    )
+    .subscribe(valor => {
+      this.onDebounce.emit(valor);
+    });
+  }
+  
+  teclaPresionada(){
+    this.debouncer.next( this.termino );
+  }
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------  Escuchar cambios en url -----------------------------------------------------------------------------------------
+this.activatedRoute.params
+    .subscribe( ({id}) => {    //Observable para escuchar cambios en la ruta de este componente
+      console.log( id );
+
+      this.paiseService.getPaisPorCodigo( id )  //Nos subscribimos por que getPaisPorCodigo es un observable y asi obtenemos la información
+      .subscribe( pais => {
+        console.log(pais);
+      });
+    });
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------  SwitchMaps -----------------------------------------------------------------------------------------
+//switchMap es un operador que recibe los parámetros del primer observable y los puedes utilizar para retornar otro observable utilizando esos params si es el caso.
+//Es muy común usar el operador cuando tenemos observables en cadena, que se necesita se ejecute uno y luego otro. De esta manera, obtener solo una 1 respuesta en el subscribe.
+//Si únicamente tienes un observable, simplemente utiliza subscribe y ya
+
+ngOnInit(): void {
+
+    this.activatedRoute.params
+      .pipe(
+        switchMap( ( param ) => this.paiseService.getPaisPorCodigo( param['id'] ))
+      )
+      .subscribe( resp  => {
+        console.log( resp )
+      });
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------- Colocar elemento html con if -------------------------------------------------------------------
+<div *ngIf="!pais; else divPais" 
+    class="alert alert-info">
+    Espere por favor...
+</div>
+
+<ng-template #divPais>
+    <div class="row">
+        <div class="col-12">
+            <h1>País:<small>{{ pais.name }}</small></h1>
+        </div>
+    </div>
+</ng-template>
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------- ngClass ------------------------------------------------------------------------------------------
+//Si class.abc esta en true tendra la clase abc de stles
+<button *ngFor="let item of regiones" class="btn btn-outline-primary "  [class.btn-primary]="loquesea === true" (click)="activarRegion(item)">
+
+//Otra forma es con el ngClass, pero meh porque evalua las dos veces aunque se cumpla la primera condicion:
+	[ngClass]="{
+            'btn-primary': regionActiva === item,
+            'btn-outline-primary': regionActiva !== item
+        }" 
+//Otra forma que solo evalua una vez:
+	[class]=" (region ===regionActiva) ? 'btn btn-primary': 'btn btn-outline-primary'"
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------- Optimizaciones a peticiones HTTP ------------------------------------------------------------------------------------------
+Ver lo del otro curso lo de httpParams, tengo apuntes de esto creo en en lo de api spring con angular creo
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+

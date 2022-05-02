@@ -1,0 +1,115 @@
+
+---------------------------------------------------------------       Formulario Basicos    ------------------------------------------------------------
+1º Importamos el FormsModule en el modulo donde vaya a estar el form.
+2º En el codigo html, con el # accederemos mediante el ts y el ngModel necesita un name:
+	<div class="row">
+    	<div class="col">
+        <form (ngSubmit)="guardar( miFormulario )" #miFormulario="ngForm" autocomplete="off">
+            <!-- Campo de producto-->
+            <div class="mb-3 row">
+                <label for="Producto" class="col-sm-3 col-form-label">Producto</label>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" placeholder="Nombre del producto" name="producto" ngModel>
+                    <span class="form-text text-danger">Debe de ser de 3 letras</span>
+                </div>
+            </div>
+3º En el ts, recibe el #:
+	guardar(miFormulario: NgForm){
+    		console.log(miFormulario.value);
+  	}
+
+4º Validaciones:
+	<input type="text" class="form-control" placeholder="Nombre del producto" name="producto" ngModel required>	//Requerido
+	//Comprobarlo con miFormulario.valid 
+	//Podemos acceder a el contenido del formulario concreto por controls el name y luego si hay errores
+	<span class="form-text text-danger" *ngIf="miFormulario.controls['producto']?.invalid && miFormulario.controls['producto']?.touched">Debe de ser de 3 letras</span>
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------      Formularios dinámicos ------------------------------------------------------------
+//Agregar elementos de forma dinamica:
+	<div class="mb-3 row">
+        	<label class="col-sm-3 col-form-label">Favoritos</label>
+        	<div class="col-sm-9">
+           	 	<input *ngFor="let item of persona.favoritos; let i = index" [(ngModel)]="item.nombre" name="favorito_{{i}}" class="form-control mb-1">
+        	</div>
+    	</div>
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------    Checks, radios y switches                        ------------------------------------------------------------
+<!-- Radio -->
+    <div class="row mb-3">
+        <label class="col-sm-3 col-form-label">Género</label>
+        <div class="col-sm-9">
+
+            <div class="form-check">
+                <input class="form-check-input"
+                       type="radio"
+                       value="M"
+                       [(ngModel)]="persona.genero"
+                       name="radioGenero"
+                       id="radioMasculino"
+                       required>
+                <label class="form-check-label" for="radioMasculino">
+                  Masculino
+                </label>
+            </div>
+
+            <div class="form-check">
+                <input class="form-check-input"
+                       type="radio"
+                       value="F"
+                       [(ngModel)]="persona.genero"
+                       name="radioGenero"
+                       id="radioFemenino"
+                       required>
+                <label class="form-check-label" for="radioFemenino">
+                  Femenino
+                </label>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Switches -->
+    <div class="row mb-3">
+        <label class="col-sm-3 col-form-label">Notificaciones</label>
+        <div class="col-sm-9">
+
+            <div class="form-check form-switch mt-2">
+                <input class="form-check-input"
+                       type="checkbox"
+                       [(ngModel)]="persona.notificaciones"
+                       name="notificaciones"
+                       id="flexSwitchCheckChecked">
+                <label class="form-check-label" for="flexSwitchCheckChecked">Quiero recibir notificaciones</label>
+            </div>
+
+        </div>
+    </div>
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------       ViewChild           ------------------------------------------------------------
+//Para referenciar #:
+	@ViewChild('miFormulario') miFormulario!: NgForm;
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------       Limpiar/Reestablecer Valor/Defecto Formulario                     ------------------------------------------------------------
+Desde el ts con el ViewChild de antemano puesto:
+	this.miFormulario.resetForm();
+
+//Si queremos researlo con valores prestablecidos:	
+	this.miFormulario.resetForm({
+      		precio: 0,
+      		existencias: 0
+    	});
+
+//Establecer valores por defecto:
+	1º En el html:
+		[ngModel] = "initForm.existencias"
+	2º En el ts:
+		initForm ={
+    			producto: 'rtx',
+    			precio: 0,
+    			existencias: 10
+  		}
+-------------------------------------------------------------------------------------------------------------------------------------------------------
