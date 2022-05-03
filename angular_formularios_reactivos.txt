@@ -69,3 +69,29 @@
 	<form autocomplete="off" [formGroup]="miFormulario" (ngSubmit)="guardar()">
 	<button type="submit" class="btn btn-primary float-end"> Guardar </button>
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------- Form Array -----------------------------------------------------------------------------------------
+1º En el ts indicamos el form.array, favoritos sera un arreglo dentro del form:
+	miFormulario: FormGroup = this.fb.group({
+    		nombre: ['', [Validators.required, Validators.minLength(3)]],
+    		favoritos: this.fb.array( [
+     			[ 'Metal Gear'],
+      			[ 'Death Stranding']
+    		], Validators.required)
+  	})
+
+	get favoritosArr(){ //Para obtener el arreglo de favoritos
+	    return this.miFormulario.get('favoritos') as FormArray;
+  	}
+
+2º En el html:
+	<div class="col-sm-9" formArrayName="favoritos">
+            <div class="input-group mb-1" *ngFor="let item of favoritosArr.controls; let i = index">
+                <input class="form-control" [formControlName] = "i">
+
+                <button class="btn btn-outline-danger"type="button">
+                   Eliminar
+               </button>
+            </div>
+        </div>
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
