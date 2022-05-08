@@ -97,5 +97,23 @@ https://angular.io/api/common/DatePipe
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ----------------------------------------------------------------------------------------Pipes Personalizados-------------------------------------------------------------------------------
+//Al crear el .ts hay que ponerle .pipe.ts como buena practica.
 
+1º Lo generamos automaticamente con: ng g p ruta, debemos importar si no se ha importado el pipe en el module.ts
+
+2º Podemos recibir el parametro a modificar y retornar el nuevo.
+
+3º Podemos indicar parametros en el pipe a tener en cuenta con los : -> {{ 'nosotros' | mayusculas:false }} y se trataria de la siguiente manera en el pipe.ts:
+	transform(value: string, enMayusculas: boolean = true): string {		//El segundo paramettro en mayusculas es el que pasamos con : y el primero es el necesario por defecto, el = a true es para hacerlo opcional, tambien se puede con ?.
+		return ( enMayusculas ) ? value.toUpperCase() : value.toLowerCase();	//If ternario
+	}
+
+***************
+ Ordenar Pipe		https://developer.mozilla.org/es/docs/Web/JavaScript/Reference/Global_Objects/Array/sort
+***************
+transform(value: Heroe[]): Heroe[] {
+    value = value.sort( (a, b) => (a.nombre > b.nombre) ? 1: -1 );
+
+    return value;
+  }
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

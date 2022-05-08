@@ -1,0 +1,68 @@
+//Mejora la carga y la seguridad.
+//Si declaramos los componentes en el app module los estamos cargando ya y entonces la carga perezosa no vale.
+//Se trabaja con modulos y no se exporta los componentes porque se trabajan con carga perezosa.
+INDICE---------------------------------------------------------------------------------------------
+1º Rutas Hijas
+	1º Creamos un modulo de routing en una ruta donde tengamos un modulo del cual queremos hacer rutas hijas para luego enlazarlo al appRouting
+	ng g m auth/authRouting --flat
+	2º Configuramos las rutas con carga perezosa y en el RouterModule es for child:
+		const routes: Routes = [
+  			{ 
+    				path: '',
+    				children: [
+      					{
+        					path: 'login',
+        					component: LoginComponent
+      						},
+      					{
+        					path: 'registro',
+        					component: RegistroComponent
+      					},
+      					{
+        					path: '**',
+        					redirectTo: 'login'
+      					}
+    				]
+  			}
+		]
+
+		@NgModule({
+  				declarations: [],
+  				imports: [
+    				CommonModule,
+    				RouterModule.forChild(routes)
+  				],
+  				exports:[
+    					RouterModule
+  				]
+		})
+		export class AuthRoutingModule { }
+	3º Importamos este modulo de appRouting en el modulo correspondiente en su ruta. En este ejempolo en auth.module.ts:
+		imports: [
+    			CommonModule,
+    			AuthRoutingModule
+  		]
+	4º En el appRoutingModule, añadimos una ruta para que carge el modulo anterior con lazyload si alguien navega alli, con loadChildren, si no lo cargariamos todo en app de golpe:
+		//Esto hace una promesa que se resuelve con el .then()
+		const routes: Routes = [
+  			{
+    				path: 'auth',
+    				loadChildren: () => import('./auth/auth.module').then( m => m.AuthModule )
+  			},
+  			{
+    				path: '404', component: ErrorPageComponent
+  			},
+		---------Resto de codigo---------
+	
+//Podemos comprobar que carga en las devTools del navegador 'f12' en el apartado de red, cuando estamos en la ruta hija lo importa y cuando nos vamos no lo importa
+2º Rutas Hijas de rutas hijas:
+	//Se declara el component en el routing y en ese component se pone un segundo <router-outlet></router-outlet>
+	const routes: Routes = [
+  		{ 
+    			path: '',
+    			component: HomeComponent,
+    			children: [
+			.............Resto de codigo
+
+---------------------------------------------------------------------------------------------------
+
