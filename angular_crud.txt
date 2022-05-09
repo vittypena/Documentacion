@@ -1,0 +1,62 @@
+//Crear interfaces con JSON -> https://app.quicktype.io/
+-------------------------------------------Insertar----------------------------------------------
+1º En el service:
+	agregarHeroe( heroe: Heroe): Observable<heroe> {
+		return this.http.post<Heroe>(`${this.baseUrl}/heroes`, heroe);
+	}
+2º En el ts que se use:
+	this.heroesService.agregarHeroe( this.heroe )
+        .subscribe( heroe => {
+          this.router.navigate(['/heroes/editar', heroe.id ]);
+          this.mostrarSnakbar('Registro creado');
+        })
+-------------------------------------------------------------------------------------------------
+
+------------------------------------------- Editar ----------------------------------------------
+1º En el service: 
+	actualizarHeroe( heroe: Heroe ): Observable<Heroe> {
+    		return this.http.put<Heroe>(`${ this.baseUrl }/heroes/${ heroe.id }`, heroe );
+  	}
+2º En el ts:
+	this.heroesService.actualizarHeroe( this.heroe )
+        .subscribe( heroe => this.mostrarSnakbar('Registro actualizado'));	
+-------------------------------------------------------------------------------------------------
+
+-------------------------------------------Eliminar----------------------------------------------
+1º En el service:
+	borrarHeroe( id: string ): Observable<any> {
+    		return this.http.delete<any>(`${ this.baseUrl }/heroes/${ id }`);
+  	}
+2º En el ts:
+	this.heroesService.borrarHeroe( this.heroe.id! )
+            .subscribe( resp => {
+              this.router.navigate(['/heroes']);
+        });
+-------------------------------------------------------------------------------------------------
+
+------------------------------------------ Obtener ----------------------------------------------
+1º En el service:
+	constructor( private http: HttpClient ) { }
+	getHeroes(): Observable<Heroe[]> {
+		return this.http.get<Heroe[]>(`${this.baseUrl}/heroes`);
+	}
+	getHeroePorId( id: string ): Observable<Heroe> {
+		return this.http.get<Heroe[]>(`${this.baseUrl}/heroes/${ id }`);
+	}
+2º En el ts:
+	this.heroesService.getHeroes()
+      	 .subscribe( heroes => this.heroes = heroes );
+
+//OTRO EJEMPLO PERO CON NEXT, mas elaborado:
+	this.paisService.buscarPais(this.termino)
+      .subscribe({        
+        next: (data) => {
+          console.log('DATA', data);
+          this.paises = data; 
+        },
+        error: (_) => {
+          this.hayError = true;
+          this.paises = [];
+        }
+       });
+-------------------------------------------------------------------------------------------------

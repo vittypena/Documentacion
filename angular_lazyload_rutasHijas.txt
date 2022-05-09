@@ -64,5 +64,12 @@ INDICE--------------------------------------------------------------------------
     			children: [
 			.............Resto de codigo
 
+3º Navegar en html a un id:
+	[routerLink] = "['/heroes', heroe.id]"
+
+4º Obtener parametros de la ruta /id, con esto obtenemos lo que hayamos mandado de parametro como id:
+	constructor( private activatedRoue: ActivatedRoute ) { }
+	this.activatedRoute.params.
+		.subscribe( ({ id }) => console.log( id ) );
 ---------------------------------------------------------------------------------------------------
 
