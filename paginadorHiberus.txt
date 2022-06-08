@@ -1,0 +1,108 @@
+------------------------------------------------------------------------- Controlador -------------------------------------------------------------------------------------------------------------------
+Usuario Controller metodo Post con paginador:
+	@ApiOperation(value = "Obtencion de lista de usuarios paginada", notes = "Obtencion de lista de usuarios paginada")
+	@PostMapping("/")
+	public MessageResponseDto<Paginated<UsuarioJdeeDto>> getUsuarioList(@RequestParam(required = false) Optional<Integer> page,
+																	@RequestParam(required = false) Optional<Integer> itemsperpage,
+																	@RequestParam(value = "sort", required = false) List<String> sortFields,
+																	@RequestBody SearchUsuarioParamsDto bodyParams ) {
+		int pageToFind = page.orElse(0);
+		int itemsperpageToFind = itemsperpage.orElse(Constantes.ITEMS_PER_PAGE);
+		Paginated<UsuarioJdeeDto> usuarioResponse = usuarioProvider.queryAllUsers(pageToFind, itemsperpageToFind, sortFields, bodyParams);		//Es de tipo Paginated que es del core del departamento
+
+		return MessageResponseDto.success(usuarioResponse);
+	}
+Notas:
+	//Retorna un MessageResponseDto paginado de UsuarioJdeeDto
+	//Recibe parametros respecto a la pagina, los items por pagina, la lista de ordenar y los body params (es los filtros que recibe) para enviar al provider.
+	//Se pone por defecto la pagina 0 y 10 items por pagina por si no se le manda ningun valor.
+	//En la implementación recibe un Paginated<UsuarioJdeeDto> que lo recibe del provider enviandole los parametros de page, itemsporpage, sortfields y bodyparams
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-> usuarioProvider.queryAllUsers	Es una interfaz con Paginated<UsuarioJdeeDto> queryAllUsers(int page, Integer itemsperpage, List<String> sortFields, SearchUsuarioParamsDto filtro);
+-> usuarioProviderImpl
+------------------------------------------------------------------------ Provider ------------------------------------------------------------------------------------------------------------------------------
+UsuarioProviderImpl :
+	@Override
+	public Paginated<UsuarioJdeeDto> queryAllUsers(int page, Integer itemsperpage, List<String> sortFields, SearchUsuarioParamsDto filtro) {
+
+		PaginacionDto pagination = new PaginacionDto();
+		Paginated<UsuarioJdeeDto> usuarioResponse = new Paginated<>();
+
+		// Elementos para realizar la paginacion
+		SortValue sortValues = SortValueFactory.getSortValues(SortValueEnum.USUARIO);
+		List<SortDto> defaultValues = sortValues.getDefaultSortValues();
+		List<String> fieldNames = sortValues.getEntityFieldNames();
+		Pageable pages = paginacionConSortProvider.getPageableWithSort(page, defaultValues, sortFields, fieldNames);
+
+		Specification<UsuarioEntity> spec = especificacion(filtro);
+		Page<UsuarioEntity> usuarios = usuarioRepository.findAll(spec, pages);
+
+		List<UsuarioJdeeDto> usuariosDto = usuarios.getContent().stream().map(this::convertToMapDto).collect(Collectors.toList());
+		usuarioResponse.setContent(usuariosDto);
+
+		pagination.setItemPerPage(usuarios.getNumberOfElements());
+		pagination.setPaginas(usuarios.getTotalPages());
+		pagination.setTotal(usuarios.getTotalElements());
+
+		usuarioResponse.setPaginacion(pagination);
+
+		return usuarioResponse;
+	}
+
+Notas:
+	//Devuelve un Paginated<UsuarioJdeeDto> paginado, ordenado y filtrado segun los criterios que han llegado desde el controlador al hacer el httpClient desde angular.	
+	//Este paginated contiene los parametros de lista content, que es un arraylist de tipo generico, y el parametro de paginacion, que recibiria el paginaciondto que hayamos creado, la lista imagino que recibe los items ya ordenados.	
+	//Declara un PaginacionDto, que tambien es del core que contiene las paginas, el total de items y los items por pagina, este dto tiene un metodo que recibe un page y setea los parametros con ese page, imagino que para purgar informacion no util.
+	//Declara un paginated del core
+	//Declara una clase abstract SortValue, que contiene dos metodos abstractos y un metodo que retorna los campos a string
+	//Las dos siguientes hay que modificarlas segun
+	//Inicializa la variable SortValue con un SortValueFactory, que contiene un metodo que devuelte un SortValue, recibiendo un SortValueEnum y en caso de que sea usuario o por lo que busquemos retorna un UserSortValues
+	//UserSortValues extiende de SortValue y aqui hay que cambiar el entity que quieres que ordene.
+	//SortValueEnum tiene un enum usuariocon ("usuario")
+	//SortDto , que recibe una key con el valor a ordenar imagino y un booleano para indicar si se va a ordenar ascendente o descendente
+
+	//Declara un Pageable que hace uso del paginacionConSortProvider y le envia los parametros de page, defaultValues, sortFields y fieldNames.
+	//Declara un Specification<UsuarioEntity> al cual le manda el filtro con los parametros de busqueda a filtrar.
+	//Declara un Page<Entity> que hace uso del usuarioRepository enviandole(el especification y las pages)
+	//Declara una lista del dto a obtener  con el page que hemos obtenido, obteniendo el contenido y convirtiendolo al dto de lo que queremos pasar con convertToMapDto
+	//ConvertToMapDto 
+	//Mete en el paginated el contenido de la lista del dto.
+	//Mete en el paginationDto el numero de paginas, item por paginas, totales del page que hemos sacado del repository.
+	//Mete en el paginated la paginacion.
+	//Retorna un paginated con la paginacion dto y una lista de dto de lo que buscamos.
+
+	//Specification:
+		//Este metodo debemos implementarlo en el provider tb.
+		//Retorna un entity segun los filtros que hemos mandado como parametros.
+		//Este entity se lo mandaremos al repository para que haga la busqueda segun el entity que hayamos creado.
+		
+	
+	//ConverToMapDto:
+		//Este metodo debemos implementarlo en el provider tb.
+		//Recibe el entity a convertir y devuelve el dto que pasaremos.
+		//Mete los datos en el dto pillandolos del entity y los retorna.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+repository -> En este caso no se usa ya que se usa el jpaRepository findAll, que puede contener por defecto un nullable.
+
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-------------------------- Dudas:
+En 
